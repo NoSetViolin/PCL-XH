@@ -1,9 +1,9 @@
 {
   "name": "PCL XH",
   "version": {
-    "base": "2.15.1",
+    "base": "26.01027",
     "upstream": "2.12.1",
-    "suffix": "beta.1",
+    "suffix": "",
     "code": 523
   },
   "licenses": [

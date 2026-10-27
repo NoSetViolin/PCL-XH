@@ -35,23 +35,6 @@ public partial class FormMain
 
     #region 基础
 
-    // 更新日志
-    private void ShowUpdateLog()
-    {
-        ModBase.RunInNewThread(() =>
-        {
-            var changelogFile = $"{ModBase.pathTemp}CEUpdateLog.md";
-            string changelog;
-            if (File.Exists(changelogFile))
-                changelog = ModBase.ReadFile(changelogFile);
-            else
-                changelog = Lang.Text("Main.UpdateLog.Empty");
-            if (ModMain.MyMsgBoxMarkdown(changelog,
-                    Lang.Text("Main.UpdateLog.Title", ModBase.versionBranchName, ModBase.versionBaseName), Lang.Text("Common.Action.Confirm"), Lang.Text("Main.UpdateLog.FullChangelog")) ==
-                2) ModBase.OpenWebsite("https://github.com/NoSetViolin/PCL-XH/releases");
-        }, "UpdateLog Output");
-    }
-
     // 窗口加载
     private bool isWindowLoadFinished;
     private readonly DragHelper _helper = new();
@@ -297,12 +280,11 @@ public partial class FormMain
         if ((int)Config.Launch.GameWindowMode == 5)
             Config.Launch.GameWindowMode = GameWindowSizeMode.Default;
 
-        // 输出更新日志
+        // 保留旧版本配置迁移条件，启动时不再自动显示更新日志。
         if (lastVersionCode <= 0)
             return;
         if (lowerVersionCode >= ModBase.versionCode)
             return;
-        ShowUpdateLog();
         
         // 重置自定义主页配置
         if (lastVersionCode < 521 && Config.Preference.Homepage.SelectedPreset >= 3)
