@@ -117,6 +117,7 @@ public static partial class ModAnimation
     /// </summary>
     public static void AniTimer(int deltaTick)
     {
+        using var probe = PCL.Core.UI.Effects.FramePacingProbe.Log.Measure("animation.advance", deltaTick);
         try
         {
             if (deltaTick / aniSpeed > 100d)

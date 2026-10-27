@@ -50,6 +50,7 @@ public class MyScrollViewer : ScrollViewer
 
     protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
+        using var probe = PCL.Core.UI.Effects.FramePacingProbe.Log.Measure("wheel.handler", e.Delta);
         if (e.Delta != 0 && VerticalScrollBarVisibility == ScrollBarVisibility.Disabled && ScrollableWidth > 0)
         {
             ScrollToHorizontalOffset(HorizontalOffset - e.Delta);

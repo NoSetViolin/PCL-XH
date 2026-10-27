@@ -17,6 +17,7 @@ internal sealed class LiquidDockController
     internal bool IsRendering => _rendering;
     private readonly Stopwatch _clock=Stopwatch.StartNew();
     private double _lastTime;
+    private TimeSpan _lastRenderingTime = TimeSpan.MinValue;
     private bool _rendering, _initialized, _ending;
     private double _pointerX;
     private RadioButton[] _tabs=[];
@@ -113,6 +114,15 @@ internal sealed class LiquidDockController
     {
         if(!_form.PrimaryNavigation.IsLoaded) { Stop();return; }
         if(!Animate) { Refresh(false);return; }
+#if PCL_FRAME_DIAGNOSTICS
+        if(!FramePacingProbe.DiagnosticBypassDedup)
+#endif
+        if(e is RenderingEventArgs frame)
+        {
+            if(frame.RenderingTime==_lastRenderingTime)return;
+            _lastRenderingTime=frame.RenderingTime;
+        }
+        using var probe = FramePacingProbe.Log.Measure("dock.advance", e is RenderingEventArgs stamp ? stamp.RenderingTime.Ticks : -1);
         var time=_clock.Elapsed.TotalSeconds;Motion.Advance(time-_lastTime);_lastTime=time;
         Apply();if(!Motion.Active)Stop();
     }

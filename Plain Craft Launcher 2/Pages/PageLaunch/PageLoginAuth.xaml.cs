@@ -54,7 +54,9 @@ public partial class PageLoginAuth
 
     private void Reload()
     {
-        _authServerUrl = draggedAuthServer ?? "";
+        // Reopening the account popup raises Loaded again; retain the current form and server.
+        if (string.IsNullOrWhiteSpace(draggedAuthServer)) return;
+        _authServerUrl = draggedAuthServer;
         var knownOAuthSupport = draggedAuthServerOAuthSupported;
         draggedAuthServer = null;
         draggedAuthServerOAuthSupported = null;

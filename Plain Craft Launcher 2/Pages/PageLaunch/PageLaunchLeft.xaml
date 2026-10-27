@@ -107,17 +107,17 @@
         </glass:LiquidGlassSurface>
     </Grid>
 
-    <Popup x:Name="AccountPopup" Placement="Center" PlacementTarget="{Binding ElementName=PanInput}"
+    <Popup x:Name="AccountPopup" Placement="Custom"
            AllowsTransparency="True" StaysOpen="False" PopupAnimation="None"
            Opened="AccountPopup_Opened" Closed="AccountPopup_Closed">
         <glass:LiquidGlassSurface x:Name="AccountFlyout" Material="Floating" Background="{DynamicResource Fluent.Surface}"
-                BorderBrush="{DynamicResource Fluent.Stroke}" BorderThickness="1" CornerRadius="24" Padding="24" Width="350" MaxHeight="360"
+                BorderBrush="{DynamicResource Fluent.Stroke}" BorderThickness="1" CornerRadius="24" Padding="24" Width="350" MaxHeight="360" ClipToBounds="True"
                 glass:LiquidGlassSurface.UseLightweightMaterial="False" Opacity="0" RenderTransformOrigin="1,0">
             <glass:LiquidGlassSurface.RenderTransform>
                 <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
             </glass:LiquidGlassSurface.RenderTransform>
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+            <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="AccountContent" VerticalAlignment="Top" SizeChanged="AccountContent_SizeChanged">
                     <TextBlock Text="{DynamicResource Main.Fluent.Account}" FontSize="20" FontWeight="SemiBold"
                                Foreground="{DynamicResource ColorBrush1}" Margin="0,0,0,18" />
                     <Grid x:Name="PanLogin" />

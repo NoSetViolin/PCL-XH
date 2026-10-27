@@ -59,9 +59,9 @@
                                         <ColumnDefinition Width="145" />
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="44" />
-                                        <RowDefinition Height="44" />
-                                        <RowDefinition Height="44" />
+                                        <RowDefinition Height="48" />
+                                        <RowDefinition Height="48" />
+                                        <RowDefinition Height="48" />
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0" Text="R" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                     <local:MySlider Grid.Row="0" Grid.Column="1" x:Name="SliderAccentR" MaxValue="255" ValueByKey="1" Change="AccentSlider_Change" ToolTip="R (0–255)"/>
@@ -181,7 +181,7 @@
                             <local:MyComboBoxItem Content="{DynamicResource Setup.Ui.Background.Suit.BottomRight}" />
                         </local:MyComboBox>
                     </Grid>
-                    <Grid x:Name="PanBackgroundOpacity" Height="22" Margin="0,0,0,7" Visibility="Collapsed">
+                    <Grid x:Name="PanBackgroundOpacity" MinHeight="48" Margin="0,0,0,7" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Name" />
                             <ColumnDefinition />
@@ -190,7 +190,7 @@
                         <local:MySlider x:Name="SliderBackgroundOpacity" Tag="UiBackgroundOpacity" MaxValue="1000"
                                         ValueByKey="10" Grid.Column="1" Change="SliderChange" />
                     </Grid>
-                    <Grid x:Name="PanBackgroundBlur" Height="22" Margin="0,0,0,10" Visibility="Collapsed">
+                    <Grid x:Name="PanBackgroundBlur" MinHeight="48" Margin="0,0,0,10" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Name" />
                             <ColumnDefinition />
@@ -222,7 +222,7 @@
             </local:MyCard>
             <local:MyCard x:Name="CardMusic" Margin="0,0,0,15" Title="{DynamicResource Setup.Ui.Music.Title}">
                 <StackPanel Margin="25,42,25,20">
-                    <Grid x:Name="PanMusicVolume" Visibility="Collapsed" Height="22" Margin="0,0,0,10">
+                    <Grid x:Name="PanMusicVolume" Visibility="Collapsed" MinHeight="48" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Name" />
                             <ColumnDefinition />

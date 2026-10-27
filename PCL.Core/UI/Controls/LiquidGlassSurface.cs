@@ -9,7 +9,7 @@ using PCL.Core.UI.Effects;
 
 namespace PCL.Core.UI.Controls;
 
-public enum LiquidGlassMaterial { Content, Chrome, Action, Input, Floating, BottomTabs, BottomTabIndicator }
+public enum LiquidGlassMaterial { Content, Chrome, Action, Input, Floating, BottomTabs, BottomTabIndicator, SliderThumb }
 
 /// <summary>
 /// A background-only glass border. The source must be a separate visual behind the UI,
@@ -17,6 +17,10 @@ public enum LiquidGlassMaterial { Content, Chrome, Action, Input, Floating, Bott
 /// </summary>
 public class LiquidGlassSurface : Border
 {
+#if PCL_FRAME_DIAGNOSTICS
+    // Compiled only into the isolated smoke build. Never changes normal material behavior.
+    public static Func<Visual, Visual>? DiagnosticBackdropOverride { get; set; }
+#endif
     private static readonly ImageBrush EmptyTabs=CreateEmptyTabs();
     private static ImageBrush CreateEmptyTabs()
     {
@@ -178,8 +182,12 @@ public class LiquidGlassSurface : Border
 
     private void OnLayoutUpdated(object? sender, EventArgs e) => RefreshCoordinates();
 
+    /// <summary>Refresh sampling after render-only transforms, without forcing layout.</summary>
+    public void RefreshBackdropCoordinates() => RefreshCoordinates();
+
     private void RefreshCoordinates()
     {
+        using var probe = FramePacingProbe.Log.Measure("glass.coordinates", (int)Material);
         if (_checking || !_coordinateTracking || !IsLoaded || !IsVisible) return;
         _checking = true;
         try
@@ -214,6 +222,7 @@ public class LiquidGlassSurface : Border
 
     protected override void OnRender(DrawingContext dc)
     {
+        using var probe = FramePacingProbe.Log.Measure("glass.record", (int)Material);
         if (RenderSize.Width <= 0 || RenderSize.Height <= 0) return;
         if (Background is null) { base.OnRender(dc); return; }
         var bounds = new Rect(RenderSize);
@@ -253,14 +262,20 @@ public class LiquidGlassSurface : Border
                 AutoLayoutContent = false
             };
             RenderOptions.SetCachingHint(_backdrop, CachingHint.Cache);
-            if (_backdrop.Visual != _source) _backdrop.Visual = _source;
+            Visual? sampledSource = _source;
+#if PCL_FRAME_DIAGNOSTICS
+            if (IsDockMaterial && sampledSource is not null && DiagnosticBackdropOverride is { } sourceOverride)
+                sampledSource = sourceOverride(sampledSource);
+#endif
+            if (_backdrop.Visual != sampledSource) _backdrop.Visual = sampledSource;
             _backdrop.Viewbox = viewbox;
             _sample ??= new DrawingVisual();
-            var upstream=Material is LiquidGlassMaterial.BottomTabs or LiquidGlassMaterial.BottomTabIndicator;
-            var indicator=Material==LiquidGlassMaterial.BottomTabIndicator;
+            var slider=Material==LiquidGlassMaterial.SliderThumb;
+            var upstream=slider || Material is LiquidGlassMaterial.BottomTabs or LiquidGlassMaterial.BottomTabIndicator;
+            var indicator=slider || Material==LiquidGlassMaterial.BottomTabIndicator;
             var progress=Math.Clamp(PressProgress,0,1);
             // Inputs must not cut sharp wallpaper-shaped holes into a blurred card.
-            var blur = upstream ? 8 : Material == LiquidGlassMaterial.Chrome ? Math.Min(8, BlurRadius) : BlurRadius;
+            var blur = slider ? 8*(1-progress) : upstream ? 8 : Material == LiquidGlassMaterial.Chrome ? Math.Min(8, BlurRadius) : BlurRadius;
             _blur ??= new BlurEffect { RenderingBias = RenderingBias.Performance };
             _blur.Radius = blur; _blur.KernelType = BlurKernelType;
             var sampleEffect = blur > 0 ? _blur : null;
@@ -271,6 +286,7 @@ public class LiquidGlassSurface : Border
                 using var context = _sample.RenderOpen();
                 context.DrawRectangle(FallbackBrush, null, expanded);
                 context.DrawRectangle(_backdrop, null, expanded);
+                if (slider) context.DrawRectangle(TabOverlay, null, expanded);
                 _sampleFallback = FallbackBrush;
             }
             var strong = Material is LiquidGlassMaterial.Chrome or LiquidGlassMaterial.Action;
@@ -291,14 +307,15 @@ public class LiquidGlassSurface : Border
                 };
                 alpha = Math.Min(alpha, maximumTint);
             }
-            if(upstream) { tint=dark?Color.FromRgb(18,18,18):Color.FromRgb(250,250,250);alpha=.4; }
+            if(slider) { tint=Colors.Transparent;alpha=0; }
+            else if(upstream) { tint=dark?Color.FromRgb(18,18,18):Color.FromRgb(250,250,250);alpha=.4; }
             var effect = _effect ??= new LiquidGlassEffect();
             effect.SizeConstant = LiquidGlassEffect.Vector(expanded.Width, expanded.Height, gutter, 0);
             effect.Corners = LiquidGlassEffect.Vector(CornerRadius.TopLeft, CornerRadius.TopRight, CornerRadius.BottomRight, CornerRadius.BottomLeft);
-            effect.Lens = upstream ? LiquidGlassEffect.Vector(indicator?10*progress:24,indicator?14*progress:24,0,indicator?1:0) : LiquidGlassEffect.Vector(strong ? 18 : 14, (strong ? 14 : 10)*RefractionStrength, 0, strong ? .025 : 0);
-            effect.Light = LiquidGlassEffect.Vector(upstream?.7071:-.7071, upstream?.7071:-.7071, upstream ? indicator?.5*progress:.5 : strong ? .75 : .48, dark ? 1 : 0);
+            effect.Lens = upstream ? LiquidGlassEffect.Vector(indicator?10*progress:24,indicator?14*progress*(slider?RefractionStrength:1):24,0,indicator?1:0) : LiquidGlassEffect.Vector(strong ? 18 : 14, (strong ? 14 : 10)*RefractionStrength, 0, strong ? .025 : 0);
+            effect.Light = LiquidGlassEffect.Vector(upstream?.7071:-.7071, upstream?.7071:-.7071, upstream ? indicator?(slider?.5/1.5:.5)*progress:.5 : strong ? .75 : .48, dark ? 1 : 0);
             effect.Tint = LiquidGlassEffect.Vector(tint.R / 255d * alpha, tint.G / 255d * alpha, tint.B / 255d * alpha, alpha);
-            effect.Controls=LiquidGlassEffect.Vector(upstream?1.5:1,0,indicator?2:upstream?1:0,progress);
+            effect.Controls=LiquidGlassEffect.Vector(upstream && !slider?1.5:1,0,slider?3:indicator?2:upstream?1:0,progress);
             effect.OverlayTint=LiquidGlassEffect.Vector(0,dark?145d/255:136d/255,1,1);
             effect.Interaction=LiquidGlassEffect.Vector(InteractionPosition.X+gutter,InteractionPosition.Y+gutter,Math.Min(bounds.Width,bounds.Height)*1.5,InteractionProgress);
             effect.Tabs=TabOverlay is VisualBrush or ImageBrush or BitmapCacheBrush ? TabOverlay : EmptyTabs;
