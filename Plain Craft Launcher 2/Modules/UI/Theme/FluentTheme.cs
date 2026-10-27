@@ -83,6 +83,8 @@ internal static class FluentTheme
         SetBrush("Fluent.Surface", SystemParameters.HighContrast ? SystemColors.WindowColor : Surface(dark ? (byte)133 : (byte)122));
         SetBrush("Fluent.GlassSurface", SystemParameters.HighContrast ? SystemColors.WindowColor : Surface(dark ? (byte)76 : (byte)51));
         SetBrush("Fluent.Card", SystemParameters.HighContrast ? SystemColors.WindowColor : Surface(dark ? (byte)128 : (byte)122));
+        SetBrush("Fluent.SliderTrack", SystemParameters.HighContrast ? SystemColors.WindowTextColor :
+            dark ? Color.FromArgb(92, 120, 120, 128) : Color.FromArgb(51, 120, 120, 120));
         SetBrush("Fluent.Stroke", SystemParameters.HighContrast ? SystemColors.WindowTextColor :
             Color.FromArgb(dark ? (byte)38 : (byte)24, dark ? (byte)255 : (byte)0,
                 dark ? (byte)255 : (byte)0, dark ? (byte)255 : (byte)0));

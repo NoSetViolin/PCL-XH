@@ -27,6 +27,7 @@
     <SolidColorBrush x:Key="Fluent.OnAccent">#FFFFFFFF</SolidColorBrush>
     <SolidColorBrush x:Key="Fluent.Surface">#7AFFFFFF</SolidColorBrush>
     <SolidColorBrush x:Key="Fluent.Card">#7AFFFFFF</SolidColorBrush>
+    <SolidColorBrush x:Key="Fluent.SliderTrack">#33787878</SolidColorBrush>
     <SolidColorBrush x:Key="Fluent.Stroke">#22000000</SolidColorBrush>
     <SolidColorBrush x:Key="Fluent.GlassSurface">#33FFFFFF</SolidColorBrush>
     <Style x:Key="Fluent.Focus" TargetType="Control">

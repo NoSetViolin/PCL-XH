@@ -155,11 +155,7 @@ public partial class PageLoginProfile
     // 创建档案
     private void BtnNew_Click(object sender, EventArgs e)
     {
-        ModBase.RunInNewThread(() =>
-        {
-            ProfileUi.CreateProfile();
-            ModBase.RunInUi(() => RefreshProfileList());
-        });
+        ModMain.frmLaunchLeft.ShowAccountCreation();
     }
 
     // 编辑 UUID

@@ -8,7 +8,7 @@ float4 Corners : register(c1); // top left, top right, bottom right, bottom left
 float4 Lens : register(c2); // edge width, displacement, depth, dispersion
 float4 Light : register(c3); // x/y direction, strength, dark theme
 float4 Tint : register(c4); // premultiplied surface tint
-float4 Controls : register(c5); // saturation, reserved, upstream material (panel=1, thumb=2), press
+float4 Controls : register(c5); // saturation, reserved, upstream material (panel=1, dock thumb=2, slider=3), press
 float4 OverlayTint : register(c6);
 float4 Interaction : register(c7); // highlight position.xy, radius, progress
 
@@ -17,7 +17,7 @@ float4 sampleContent(float2 uv) {
     float gray=dot(color.rgb,float3(0.2126,0.7152,0.0722));
     color.rgb=saturate(lerp(gray.xxx,color.rgb,Controls.x));
     color=Tint+color*(1-Tint.a);
-    if(Controls.z>1.5) {
+    if(Controls.z>1.5 && Controls.z<2.5) {
         float4 tab=tex2Dlod(Tabs,float4(saturate(uv),0,0));
         color.rgb=lerp(color.rgb,OverlayTint.rgb,tab.a);
     }
@@ -74,7 +74,9 @@ float4 PixelShaderFunction(float2 uv : TEXCOORD) : COLOR {
         color.r=sampleContent(refracted+dispersion).r;
         color.b=sampleContent(refracted-dispersion).b;
     }
-    if(Controls.z>1.5) {
+    if(Controls.z>2.5) {
+        color.rgb*=1-.15*Controls.w*saturate(1+sd/max(.001,4*Controls.w));
+    } else if(Controls.z>1.5) {
         float rest=.1*(1-Controls.w);
         color.rgb=lerp(color.rgb,Light.w>.5?1:0,rest);
         color.rgb*=1-.03*Controls.w;
@@ -96,6 +98,7 @@ float4 PixelShaderFunction(float2 uv : TEXCOORD) : COLOR {
     }
     // Keep the wallpaper's hue and tonal range. Readability comes from the
     // explicit surface tint, never from a per-pixel luminance clamp.
+    if(Controls.z>2.5) color.rgb=lerp(float3(1,1,1),color.rgb,Controls.w);
     color.a = 1;
     return color;
 }

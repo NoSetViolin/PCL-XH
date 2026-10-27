@@ -29,3 +29,14 @@ Reference: https://github.com/androidx/androidx/blob/androidx-main/compose/anima
 
 Run `CompileLiquidGlass.ps1` after editing the shader. The compiled `.ps` is
 embedded by PCL.Core so normal builds do not require an installed Windows SDK.
+
+The slider adapts `catalog/components/LiquidSlider.kt` and
+`catalog/utils/DampedDragAnimation.kt` at the same pinned revision.
+`LiquidSliderMotion.cs` ports continuous value/velocity, press and anisotropic scale
+springs (pressed scale 1.5). The WPF `MySlider` adapter keeps integer configuration
+values, keyboard steps, validation and popup callbacks. Its separate sibling track
+is composited with the inherited wallpaper before blur/refraction, never with the
+thumb itself. Shader mode 3 adds the slider's 8*(1-press) DIP blur, 10/14 DIP lens,
+seven-band dispersion, press-driven highlight and 4 DIP inner shadow, and white
+rest surface. Theme accent replaces the upstream fixed blue; endpoint placement is
+bounded to the control's hit area to accommodate WPF page clipping.

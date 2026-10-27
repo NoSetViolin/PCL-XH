@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -50,6 +51,7 @@ public partial class PageLaunchLeft
     public PageLaunchLeft()
     {
         InitializeComponent();
+        AccountPopup.CustomPopupPlacementCallback = PlaceAccountPopup;
         Loaded += PageLaunchLeft_Loaded;
         WeakLanguageChanged.Add(this, OnLanguageChanged);
         // Handles
@@ -79,6 +81,10 @@ public partial class PageLaunchLeft
 
     private void AccountPopup_Opened(object? sender, EventArgs e)
     {
+        ResizeAccountCard(false);
+        ModMain.frmMain.PanForm.SizeChanged += AccountPopupOwner_LayoutChanged;
+        ModMain.frmMain.LocationChanged += AccountPopupOwner_LayoutChanged;
+        ModMain.frmMain.StateChanged += AccountPopupOwner_LayoutChanged;
         if (!ControlVisualHelpers.ShouldAnimate(AccountFlyout))
         {
             AccountFlyout.Opacity = 1d;
@@ -102,7 +108,12 @@ public partial class PageLaunchLeft
 
     private void AccountPopup_Closed(object? sender, EventArgs e)
     {
+        ModMain.frmMain.PanForm.SizeChanged -= AccountPopupOwner_LayoutChanged;
+        ModMain.frmMain.LocationChanged -= AccountPopupOwner_LayoutChanged;
+        ModMain.frmMain.StateChanged -= AccountPopupOwner_LayoutChanged;
         ModAnimation.AniStop("Launch Account Flyout");
+        ModAnimation.AniStop("Launch Account Card Height");
+        AccountFlyout.Height = double.NaN;
         AccountFlyout.Opacity = 0d;
         if (AccountFlyout.RenderTransform is ScaleTransform scale)
         {
@@ -145,9 +156,138 @@ public partial class PageLaunchLeft
             Children.Remove(AccountPopup);
             ModMain.frmMain.PanForm.Children.Add(AccountPopup);
         }
-        AccountPopup.PlacementTarget = ModMain.frmMain.AccountAnchor;
-        AccountPopup.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        // Popup only avoids screen edges by default; use the window's content bounds instead.
+        AccountPopup.PlacementTarget = ModMain.frmMain.PanForm;
+        UpdateAccountPopupSize();
         AccountPopup.IsOpen = true;
+    }
+
+    private const double AccountPopupInset = 5d;
+    private const double AccountPopupGap = 8d;
+
+    private void AccountContent_SizeChanged(object sender, SizeChangedEventArgs e) => ResizeAccountCard(true);
+
+    private void ResizeAccountCard(bool animate)
+    {
+        if (!AccountPopup.IsOpen) return;
+        // Leave one layout pixel for fractional text/layout rounding, avoiding a spurious scrollbar.
+        var height = Math.Min(AccountFlyout.MaxHeight, Math.Ceiling(AccountContent.ActualHeight
+            + AccountFlyout.Padding.Top + AccountFlyout.Padding.Bottom
+            + AccountFlyout.BorderThickness.Top + AccountFlyout.BorderThickness.Bottom) + 1d);
+        ModAnimation.AniStop("Launch Account Card Height");
+        if (!animate || double.IsNaN(AccountFlyout.Height) || !ControlVisualHelpers.ShouldAnimate(AccountFlyout))
+        {
+            AccountFlyout.Height = height;
+            return;
+        }
+        ModAnimation.AniStart(new[]
+        {
+            ModAnimation.AaHeight(AccountFlyout, height - AccountFlyout.Height, 240,
+                ease: new ModAnimation.AniEaseOutFluent(ModAnimation.AniEasePower.Weak))
+        }, "Launch Account Card Height");
+    }
+
+    internal void ShowAccountCreation()
+    {
+        PageChange(PageType.Create, true);
+    }
+
+    private FrameworkElement CreateAccountTypeSelection()
+    {
+        var panel = new StackPanel();
+        var title = new TextBlock
+        {
+            Text = Lang.Text("Launch.Account.Profile.Create.SelectAuthType.Title"),
+            TextWrapping = TextWrapping.Wrap,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        title.SetResourceReference(TextBlock.ForegroundProperty, "ColorBrush1");
+        panel.Children.Add(title);
+        foreach (var option in ProfileUi.GetAvailableProfileSelection())
+        {
+            var type = option.LoginType;
+            option.Item.Type = MyListItem.CheckType.Clickable;
+            option.Item.Margin = new Thickness(0, 2, 0, 2);
+            option.Item.Click += (_, _) =>
+            {
+                panel.IsEnabled = false;
+                if (type != ModLaunch.McLoginType.Auth)
+                {
+                    ProfileUi.CreateProfile(type);
+                    return;
+                }
+                // Server selection still uses a window dialog; restore this card on completion or cancel.
+                AccountPopup.IsOpen = false;
+                ModBase.RunInNewThread(() =>
+                {
+                    try { ProfileUi.CreateProfile(type); }
+                    finally
+                    {
+                        ModBase.RunInUi(() =>
+                        {
+                            panel.IsEnabled = true;
+                            ShowAccount();
+                        });
+                    }
+                });
+            };
+            panel.Children.Add(option.Item);
+        }
+        var back = new MyTextButton
+        {
+            Text = Lang.Text("Launch.Account.Back"),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 16, 0, 0)
+        };
+        back.Click += (_, _) => RefreshPage(true);
+        panel.Children.Add(back);
+        return panel;
+    }
+
+    private void UpdateAccountPopupSize()
+    {
+        var main = ModMain.frmMain;
+        var anchorBottom = main.AccountAnchor.TranslatePoint(
+            new Point(0, main.AccountAnchor.ActualHeight), main.PanForm).Y;
+        AccountFlyout.Width = Math.Min(350d, Math.Max(0d, main.PanForm.ActualWidth - 2 * AccountPopupInset));
+        AccountFlyout.MaxHeight = Math.Min(360d,
+            Math.Max(0d, main.PanForm.ActualHeight - anchorBottom - AccountPopupGap - AccountPopupInset));
+        ResizeAccountCard(true);
+    }
+
+    private CustomPopupPlacement[] PlaceAccountPopup(Size popupSize, Size targetSize, Point offset)
+    {
+        var main = ModMain.frmMain;
+        var anchorBottomRight = main.AccountAnchor.TranslatePoint(
+            new Point(main.AccountAnchor.ActualWidth, main.AccountAnchor.ActualHeight), main.PanForm);
+        // WPF supplies placement sizes in device pixels; TranslatePoint returns layout units.
+        var scaleX = targetSize.Width / main.PanForm.ActualWidth;
+        var scaleY = targetSize.Height / main.PanForm.ActualHeight;
+        var insetX = AccountPopupInset * scaleX;
+        var insetY = AccountPopupInset * scaleY;
+        // Reserve the full layout size even while the opening animation starts at 94% scale.
+        var width = Math.Max(popupSize.Width, AccountFlyout.ActualWidth * scaleX);
+        var height = Math.Max(popupSize.Height, AccountFlyout.ActualHeight * scaleY);
+        var x = Math.Clamp(anchorBottomRight.X * scaleX - width, insetX,
+            Math.Max(insetX, targetSize.Width - width - insetX));
+        var y = Math.Clamp((anchorBottomRight.Y + AccountPopupGap) * scaleY, insetY,
+            Math.Max(insetY, targetSize.Height - height - insetY));
+        return [new CustomPopupPlacement(new Point(x, y), PopupPrimaryAxis.None)];
+    }
+
+    private void AccountPopupOwner_LayoutChanged(object? sender, EventArgs e)
+    {
+        if (ModMain.frmMain.WindowState == WindowState.Minimized)
+        {
+            AccountPopup.IsOpen = false;
+            return;
+        }
+        UpdateAccountPopupSize();
+        // WPF does not reposition an open Popup when its owner moves.
+        var offset = AccountPopup.HorizontalOffset;
+        AccountPopup.HorizontalOffset = offset + 1d;
+        AccountPopup.HorizontalOffset = offset;
     }
 
     private static void OnLanguageChanged(PageLaunchLeft page) => ModBase.RunInUi(page.RefreshButtonsUI);
@@ -773,6 +913,7 @@ public partial class PageLaunchLeft
     private enum PageType
     {
         None,
+        Create,
         Auth,
         Ms,
         Profile,
@@ -789,6 +930,8 @@ public partial class PageLaunchLeft
     {
         switch (type)
         {
+            case PageType.Create:
+                return CreateAccountTypeSelection();
             case PageType.Auth:
             {
                 if (ModMain.frmLoginAuth is null)

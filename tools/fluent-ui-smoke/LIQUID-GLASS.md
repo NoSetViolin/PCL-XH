@@ -99,3 +99,28 @@ and instance data; layout fixtures do not establish those end-to-end outcomes.
 
 Build outputs, screenshots and the session validation report are saved under the
 ignored `artifacts/liquid-glass/` directory; they are not part of the source patch.
+
+## Liquid sliders
+
+All launcher value sliders share `MySlider`: 6 DIP capsule track, 40x24 DIP thumb,
+1.5 pressed scale, upstream value/velocity/press and X/Y scale springs. The
+`SliderThumb` material always uses the full glass pipeline, including when pages
+inherit `UseLightweightMaterial=true`. A sibling-only track VisualBrush is composed
+with the inherited background before the press-dependent blur and lens. Idle thumbs
+have the upstream white surface; disabled and accessibility states retain a clear
+outline and opaque fallback. The existing theme accent colors the completed track.
+
+The WPF adapter retains integer values, keyboard steps, preview rejection, change
+callbacks and hint delegates. Value updates are immediate; only visual state follows
+the spring. Reduced motion snaps to values. Capture loss, disabling, hiding, unload
+and range changes release pointer ownership and close hints. Compositor subscriptions
+end when springs settle; hint timeout timers stop on close/unload.
+
+Create `slider-only.flag` beside the isolated executable to run the continuous-slider
+interaction fixture followed by all settings layouts. The fixture checks range and
+keyboard bounds, rejected changes, drag/reversal, zero/narrow ranges, disable/unload
+and idle cleanup. It writes `slider-report.txt` under the isolated QA root, hardware
+captures for rest/pressed/flat/fallback in both themes and 1/1.5/2x raster layout
+captures. The settings pass expands conditional background/volume controls and audits
+both themes, 810/1280 DIP windows and English/Chinese labels. Hardware captures are
+required for optical inspection; raster captures establish layout only.

@@ -1,5 +1,42 @@
 ﻿# Fluent UI smoke checks
 
+## Sustained frame pacing investigation
+
+Run `tools/fluent-ui-smoke/Run-FramePacing.ps1 -OutputRoot artifacts/frame-pacing/baseline -SystemTrace`
+from the repository root. It builds an isolated Release executable, warms each scenario
+for 2 seconds, then captures three 10-second trials of direct scrolling, routed MouseWheel
+input through production easing, dock dragging and navigation. The matrix runs with normal
+materials, a frozen dock backdrop snapshot, and disabled dock glass. Overrides and resource
+bindings are restored in `finally`. Snapshots can omit other ps_3_0 effects, so they isolate
+scene dependency cost rather than establish visual equivalence.
+
+Use a fresh output directory per run. QA data/config paths are isolated under `qa/`
+via `PCL_FRAME_QA_ROOT`. Install managed tracing with
+`dotnet tool install dotnet-trace --tool-path artifacts/frame-pacing/tools`.
+The script captures managed stack samples, GC events and `PCL-FramePacing` markers.
+WPR needs system profiling permission; failure is recorded without cancelling existing
+recordings. Open `managed.nettrace` in PerfView or Visual Studio; use `system.etl` in WPA
+when system capture succeeds for native render-thread scheduling and GPU/DWM events.
+
+Trials write raw QPC timestamps/durations, callback intervals, GC counts, LayoutUpdated
+counts, Render-priority dispatcher durations, and wheel-to-offset response. Dispatcher
+duration includes other work and is **not** exact layout cost. Routed wheel input excludes
+HID/OS delivery and its timer depends on dispatcher availability. Pending inputs pair with
+their first subsequent offset change, not proof of causality or input-to-photon latency.
+GDI refresh is nominal; callback timing is **not** displayed FPS. Instrumentation and stack
+sampling add overhead; compare equally instrumented runs on the same display/configuration.
+
+Summarize with `python tools/fluent-ui-smoke/summarize_frame_pacing.py artifacts/frame-pacing/baseline`.
+The runner uses separate `obj/FramePacing-Release/` intermediates. Normal builds omit the
+harness and backdrop override. Dormant probe scopes emit no events.
+For a focused recheck, add `frame-pacing-normal-only.flag` beside the diagnostic executable
+to repeat all four normal scenarios (three 10-second trials each), or
+`frame-pacing-verify-only.flag` to check timestamp deduplication including subscription restarts.
+The harness pins a frozen DrawingBrush wallpaper and dark theme and removes background video
+for consistent process-to-process comparisons, restoring them on exit. For a paired baseline,
+add `frame-pacing-baseline.flag` to bypass the new timestamp filters in the same diagnostic
+binary. This bypass is compiled out of normal builds. Do not compare random startup wallpapers.
+
 For the WPF Liquid Glass material, hardware screenshot checks and shader build
 instructions, see [LIQUID-GLASS.md](LIQUID-GLASS.md).
 
@@ -133,3 +170,14 @@ the report. These are callback intervals, not presented/displayed FPS.
 `animation-scheduler-only.flag` verifies animation completion at 60/144/240/automatic,
 same-name replacement, worker wake-up, loading visibility and idle detachment.
 The normal launcher does not contain or read any of these diagnostic switches.
+
+Create `slider-only.flag` for liquid slider gestures, spring cleanup, hardware glass
+captures and expanded settings layout checks. See `LIQUID-GLASS.md` for coverage.
+
+```powershell
+dotnet test PCL.Core.Test/PCL.Core.Test.csproj -p:IsTestProject=true --filter 'FullyQualifiedName~LiquidSliderMotion|FullyQualifiedName~LiquidTabMotion|FullyQualifiedName~LauncherNavigationTest'
+```
+
+Use `slider-fixture-only.flag` to run just the isolated slider gesture/optical fixture
+without repeating the settings layout matrix. Track-sample captures must contain
+nontransparent pixels; flat/pressed pairs allow direct inspection of refraction.

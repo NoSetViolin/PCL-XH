@@ -93,7 +93,7 @@ public partial class PageLoginMs
                 {
                     BtnLogin.IsEnabled = true;
                     BtnBack.Visibility = Visibility.Visible;
-                    BtnLogin.Text = Lang.Text("Launch.Account.Login");
+                    BtnLogin.Text = Lang.Text("Launch.Account.Microsoft.Start");
                 });
             }
         }, "Ms Login");

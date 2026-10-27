@@ -179,21 +179,9 @@ public static class ProfileUi
         return uuid;
     }
 
-    public static void CreateProfile()
+    public static void CreateProfile(ModLaunch.McLoginType type)
     {
-        List<ProfileCreationOption> options = [];
-        int? selected = null;
-        ModBase.RunInUiWait(() =>
-        {
-            options = _GetAvailableProfileSelection();
-            var items = new List<IMyRadio>(options.Count);
-            foreach (var option in options) items.Add(option.Item);
-            selected = ModMain.MyMsgBoxSelect(items,
-                Lang.Text("Launch.Account.Profile.Create.SelectAuthType.Title"), Lang.Text("Common.Action.Continue"), Lang.Text("Common.Action.Cancel"));
-        });
-        if (selected is not { } index || index < 0 || index >= options.Count) return;
         ProfileService.IsCreatingProfile = true;
-        var type = options[index].LoginType;
         if (type == ModLaunch.McLoginType.Auth)
         {
             string? server = null;
@@ -214,9 +202,9 @@ public static class ProfileUi
     /// <summary>
     ///     创建档案时可选的登录方式。显式保存登录类型，避免依赖列表顺序。
     /// </summary>
-    private readonly record struct ProfileCreationOption(ModLaunch.McLoginType LoginType, MyListItem Item);
+    internal readonly record struct ProfileCreationOption(ModLaunch.McLoginType LoginType, MyListItem Item);
 
-    private static List<ProfileCreationOption> _GetAvailableProfileSelection()
+    internal static List<ProfileCreationOption> GetAvailableProfileSelection()
     {
         var options = new List<ProfileCreationOption>(3);
         if (MicrosoftProvider.IsConfigured)

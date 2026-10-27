@@ -1,298 +1,253 @@
-﻿using System.Windows;
+﻿// WPF adapter for AndroidLiquidGlass LiquidSlider, pinned to 65ab177 (Apache-2.0).
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
+using System.Windows.Threading;
+using PCL.Core.UI.Effects;
 
-using PCL.Core.App.Localization;
 namespace PCL;
 
 public partial class MySlider
 {
     public delegate void ChangeEventHandler(object sender, bool user);
-
     public delegate void PreviewChangeEventHandler(object sender, ModBase.RouteEventArgs e);
-
-    // 自定义属性
-
-    private int _Value;
-    private bool changeByKey;
-
-    // 拖动
-
-    public Delegate getHintText;
-
-    // 基础
-
+    public event ChangeEventHandler? Change;
+    public event PreviewChangeEventHandler? PreviewChange;
+    public Delegate? getHintText;
     public int Uuid = ModBase.GetUuid();
+    public uint ValueByKey { get; set; } = 1U;
+    private int _value, _maxValue = 100;
+    private bool _dragging, _interactive, _rendering, _ending;
+    private double _pointerX, _lastTime;
+    private TimeSpan _lastRenderingTime = TimeSpan.MinValue;
+    private readonly Stopwatch _clock = Stopwatch.StartNew();
+    private readonly DispatcherTimer _popupTimer = new() { Interval = TimeSpan.FromMilliseconds(700) };
+    internal LiquidSliderMotion Motion { get; } = new();
+    internal bool IsRendering => _rendering;
+    private readonly DrawingVisual _trackSample = new();
+    private readonly VisualBrush _trackBrush;
+    private readonly VisualBrush _trackOutput;
+    private double Progress => MaxValue > 0 ? Value / (double)MaxValue : 0;
+    private double TrackWidth => Math.Max(0, ActualWidth - 60);
+    private bool Animate => IsLoaded && IsVisible && SystemParameters.ClientAreaAnimation
+        && !SystemParameters.HighContrast && ModAnimation.AniControlEnabled == 0;
 
     public MySlider()
     {
         InitializeComponent();
-        SizeChanged += RefreshWidth;
+        _trackBrush = new VisualBrush(TrackLayer) { ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
+            Stretch = Stretch.Fill, AutoLayoutContent = false };
+        _trackOutput = new VisualBrush(_trackSample) { ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
+            Stretch = Stretch.Fill, AutoLayoutContent = false };
+        ShapeDot.TabOverlay = _trackOutput;
+        SizeChanged += (_, _) => Apply();
+        Loaded += (_, _) => { Motion.Reset(Progress); Apply(); };
+        Unloaded += (_, _) => ResetInteraction();
+        IsVisibleChanged += (_, _) => { if (!IsVisible) ResetInteraction(); };
+        IsEnabledChanged += (_, _) => { if (!IsEnabled) ResetInteraction(); RefreshColor(); };
+        MouseEnter += (_, _) => Focus();
         MouseLeftButtonDown += DragStart;
-        IsEnabledChanged += (_, _) => RefreshColor();
-        MouseEnter += (_, _) => RefreshColor();
-        MouseLeave += (_, _) => RefreshColor();
-        MouseEnter += (_, _) => MySlider_MouseEnter();
-        KeyDown += MySlider_KeyDown;
+        MouseMove += (_, _) => { if (_dragging) DragDoing(); };
+        MouseLeftButtonUp += (_, e) => { if (_dragging) { DragStop(); e.Handled = true; } };
+        LostMouseCapture += (_, _) => { if (_dragging) DragStop(); };
+        KeyDown += OnKeyDown;
+        _popupTimer.Tick += (_, _) => { _popupTimer.Stop(); Popup.IsOpen = false; };
+        RefreshColor();
     }
 
     public int MaxValue
     {
-        get => field;
+        get => _maxValue;
         set
         {
-            if (value == field)
-                return;
-            field = value;
-            RefreshWidth(null, null);
+            value = Math.Max(0, value);
+            if (_maxValue == value) return;
+            DragStop(); _maxValue = value;
+            // Range changes must leave a valid value even when preview rejects a change.
+            _value = Math.Clamp(_value, 0, value);
+            Motion.Reset(Progress); StopRendering(); Apply();
         }
-    } = 100;
-
+    }
     public int Value
     {
-        get => _Value;
+        get => _value;
         set
         {
             try
             {
-                value = (int)Math.Round(ModBase.MathClamp(value, 0d, MaxValue));
-                if (_Value == value)
-                    return;
-
-                // 触发 Preview 事件，修改新值
-                var oldValue = _Value;
-                _Value = value;
+                value = Math.Clamp(value, 0, MaxValue);
+                if (_value == value) return;
+                var old = _value;
+                _value = value;
                 if (ModAnimation.AniControlEnabled == 0)
                 {
-                    var e = new ModBase.RouteEventArgs();
-                    PreviewChange?.Invoke(this, e);
-                    if (e.handled)
+                    var args = new ModBase.RouteEventArgs();
+                    PreviewChange?.Invoke(this, args);
+                    if (args.handled)
                     {
-                        _Value = oldValue;
-                        DragStop();
-                        return;
+                        _value = old; ResetInteraction(); return;
                     }
                 }
-
-                if (IsLoaded && ModAnimation.AniControlEnabled == 0)
-                {
-                    if (ActualWidth < ShapeDot.Width)
-                        return;
-                    var newWidth = _Value / (double)MaxValue * (ActualWidth - ShapeDot.Width);
-                    var deltaProcess =
-                        Math.Abs(LineFore.Width / (ActualWidth - ShapeDot.Width) - _Value / (double)MaxValue);
-                    var time = (1d - Math.Pow(1d - deltaProcess, 3d)) * 300d + (changeByKey ? 100 : 0);
-                    ModAnimation.AniStart(
-                        new[]
-                        {
-                            ModAnimation.AaWidth(LineFore,
-                                Math.Max(0d, newWidth + (newWidth < 0.5d ? 0d : 0.5d)) - LineFore.Width,
-                                (int)Math.Round(time),
-                                ease: time > 50d
-                                    ? new ModAnimation.AniEaseOutFluent()
-                                    : new ModAnimation.AniEaseLinear()),
-                            ModAnimation.AaWidth(LineBack,
-                                Math.Max(0d,
-                                    ActualWidth - ShapeDot.Width - newWidth +
-                                    (ActualWidth - ShapeDot.Width - newWidth < 0.5d ? 0d : 0.5d)) - LineBack.Width,
-                                (int)Math.Round(time),
-                                ease: time > 50d
-                                    ? new ModAnimation.AniEaseOutFluent()
-                                    : new ModAnimation.AniEaseLinear()),
-                            ModAnimation.AaX(ShapeDot, newWidth - ShapeDot.Margin.Left, (int)Math.Round(time),
-                                ease: time > 50d
-                                    ? new ModAnimation.AniEaseOutFluent()
-                                    : new ModAnimation.AniEaseLinear())
-                        }, "MySlider Progress " + Uuid);
-                }
-                else
-                {
-                    RefreshWidth(null, null);
-                }
-
-                if (ModAnimation.AniControlEnabled == 0)
-                    Change?.Invoke(this, false);
+                if (Animate) { Motion.SetValue(Progress, _interactive); StartRendering(); }
+                else { Motion.Reset(Progress); StopRendering(); }
+                Apply();
+                if (ModAnimation.AniControlEnabled == 0) Change?.Invoke(this, false);
             }
-
             catch (Exception ex)
             {
-                ModBase.Log(
-                    ex,
-                    "滑动条进度改变出错",
-                    ModBase.LogLevel.Hint,
-                    userSummary: Lang.Text("Application.Control.Error.OperationFailed"));
+                ResetInteraction();
+                ModBase.Log(ex, "滑动条进度改变出错", ModBase.LogLevel.Hint,
+                    userSummary: PCL.Core.App.Localization.Lang.Text("Application.Control.Error.OperationFailed"));
             }
         }
-    }
-
-    // 按键改变
-
-    public uint ValueByKey { get; set; } = 1U;
-    public event ChangeEventHandler? Change;
-    public event PreviewChangeEventHandler? PreviewChange;
-
-    private void RefreshWidth(object sender, SizeChangedEventArgs? e)
-    {
-        if (e is not null)
-            PanMain.Width = e.NewSize.Width;
-        ModAnimation.AniStop("MySlider Progress " + Uuid);
-        var newWidth = _Value / (double)MaxValue * (ActualWidth - ShapeDot.Width);
-        LineFore.Width = Math.Max(0d, newWidth + (newWidth < 0.5d ? 0d : 0.5d));
-        LineBack.Width = Math.Max(0d,
-            ActualWidth - ShapeDot.Width - newWidth + (ActualWidth - ShapeDot.Width - newWidth < 0.5d ? 0d : 0.5d));
-        ModBase.SetLeft(ShapeDot, newWidth);
     }
 
     private void DragStart(object sender, MouseButtonEventArgs e)
     {
-        CaptureMouse();
-        MouseMove += OnDragMouseMove;
-        e.Handled = true; // 防止 ScrollViewer 失焦问题
-        ModMain.dragControl = this;
-        RefreshColor();
-        ModMain.frmMain.DragDoing();
-        ModAnimation.AniStart(
-            ModAnimation.AaScaleTransform(ShapeDot, 1.3d - ((ScaleTransform)ShapeDot.RenderTransform).ScaleX, 40,
-                ease: new ModAnimation.AniEaseOutFluent()), "MySlider Scale " + Uuid);
-        RefreshPopup();
-        ModAnimation.AniStop("MySlider KeyPopup " + Uuid);
+        BeginDrag(e.GetPosition(PanMain).X);
+        e.Handled = true;
     }
-
+    internal void BeginDrag(double pointerX, bool capture = true)
+    {
+        if (!IsEnabled || TrackWidth <= 0) return;
+        Focus(); _popupTimer.Stop();
+        if (ModMain.dragControl is { } other && !ReferenceEquals(other, this)) other.DragStop();
+        _pointerX = pointerX;
+        var center = ThumbOffset.X + 20;
+        // Pressing the thumb retains its grab offset; clicking the track jumps to the pointer.
+        var onThumb = Math.Abs(_pointerX - center) <= 20 * Motion.ThumbScaleX;
+        _dragging = true; ModMain.dragControl = this;
+        if (capture && !CaptureMouse()) { DragStop(); return; }
+        if (Animate) Motion.BeginDrag();
+        if (!onThumb) SetFromPointer(_pointerX);
+        if (_dragging && Animate) StartRendering();
+        if (_dragging) RefreshPopup();
+    }
+    private void SetFromPointer(double x)
+    {
+        if (TrackWidth <= 0) return;
+        SetUserValue((int)Math.Round(Math.Clamp((x - 30) / TrackWidth, 0, 1) * MaxValue));
+    }
+    private bool SetUserValue(int value)
+    {
+        _interactive = true;
+        try { Value = value; return Value == Math.Clamp(value, 0, MaxValue); }
+        finally { _interactive = false; }
+    }
     public void DragDoing()
     {
-        var percent =
-            ModBase.MathClamp((Mouse.GetPosition(PanMain).X - ShapeDot.Width / 2d) / (ActualWidth - ShapeDot.Width), 0d,
-                1d);
-        var newValue = (int)Math.Round(percent * MaxValue);
-        if (newValue != Value) Value = newValue;
-        RefreshPopup();
+        DragTo(Mouse.GetPosition(PanMain).X);
     }
-    
-    private void OnDragMouseMove(object sender, MouseEventArgs e)
+    internal void DragTo(double x)
     {
-        DragDoing();
+        if (!_dragging || !IsEnabled || TrackWidth <= 0) return;
+        var delta = x - _pointerX; _pointerX = x;
+        // Keep sub-step motion until it reaches the next integer setting value.
+        _dragValue = Math.Clamp((_dragValue ?? Value) + delta / TrackWidth * MaxValue, 0, MaxValue);
+        SetUserValue((int)Math.Round(_dragValue.Value));
+        if (_dragging) RefreshPopup();
     }
-    
+    private double? _dragValue;
     public void DragStop()
     {
-        MouseMove -= OnDragMouseMove;
-        if (IsMouseCaptured) ReleaseMouseCapture();
-        RefreshColor();
-        ModAnimation.AniStart(
-            ModAnimation.AaScaleTransform(ShapeDot, 1d - ((ScaleTransform)ShapeDot.RenderTransform).ScaleX, 200,
-                ease: new ModAnimation.AniEaseOutFluent()), "MySlider Scale " + Uuid);
-        Popup.IsOpen = false;
-    }
-
-    public void RefreshPopup()
-    {
-        if (getHintText is null)
-            return;
-        Popup.IsOpen = true;
-        TextHint.Text = getHintText.DynamicInvoke(Value)?.ToString() ?? "";
-        var typeface = new Typeface(TextHint.FontFamily, TextHint.FontStyle, TextHint.FontWeight, TextHint.FontStretch);
-        var formattedText = new FormattedText(TextHint.Text, Thread.CurrentThread.CurrentCulture,
-            TextHint.FlowDirection, typeface, TextHint.FontSize, TextHint.Foreground, ModBase.dpi);
-        TextHint.Width = formattedText.Width; // 使用手动测量的宽度修复 #1057
-    }
-
-    // 指向动画
-
-    private void RefreshColor()
-    {
+        if (_ending) return;
+        _ending = true;
         try
         {
-            // 判断当前颜色
-            string foregroundName;
-            string dotFillName;
-            int animationTime;
-            if (IsEnabled)
-            {
-                if (ModMain.dragControl is not null && ModMain.dragControl.Equals(this) || IsMouseOver)
-                {
-                    foregroundName = "ColorBrush3";
-                    dotFillName = "ColorBrush3";
-                    animationTime = 40;
-                }
-                else
-                {
-                    foregroundName = "ColorBrushBg0";
-                    dotFillName = "ColorBrushBg0";
-                    animationTime = 100;
-                }
-            }
-            else
-            {
-                foregroundName = "ColorBrushGray5";
-                dotFillName = "ColorBrushGray5";
-                animationTime = 200;
-            }
-
-            // 触发颜色动画
-            if (IsLoaded && ModAnimation.AniControlEnabled == 0) // 防止默认属性变更触发动画
-            {
-                // 有动画
-                ModAnimation.AniStart(
-                    new[]
-                    {
-                        ModAnimation.AaColor(this, BorderBrushProperty, foregroundName, animationTime),
-                        ModAnimation.AaColor(ShapeDot, Shape.FillProperty, dotFillName, animationTime)
-                    }, "MySlider Color " + Uuid);
-            }
-            else
-            {
-                // 无动画
-                ModAnimation.AniStop("MySlider Color " + Uuid);
-                SetResourceReference(BorderBrushProperty, foregroundName);
-                ShapeDot.SetResourceReference(Shape.FillProperty, dotFillName);
-            }
+            var wasDragging = _dragging;
+            _dragging = false; _dragValue = null;
+            if (ReferenceEquals(ModMain.dragControl, this)) ModMain.dragControl = null;
+            if (IsMouseCaptured) ReleaseMouseCapture();
+            _popupTimer.Stop(); Popup.IsOpen = false;
+            if (wasDragging && Animate) { Motion.EndDrag(); StartRendering(); }
+            else if (!Animate) { Motion.Reset(Progress); StopRendering(); Apply(); }
         }
-
-        catch (Exception ex)
-        {
-            ModBase.Log(ex, "滑动条颜色改变出错");
-        }
+        finally { _ending = false; }
     }
-
-    private void MySlider_MouseEnter()
+    private void ResetInteraction()
     {
-        Focus(); // 确保按键能改变值
+        DragStop(); Motion.Reset(Progress); StopRendering(); Apply();
     }
-
-    private void MySlider_KeyDown(object sender, KeyEventArgs e)
+    public void RefreshPopup()
     {
-        // 拒绝一边拖动一边用按键改变
-        if (ReferenceEquals(this, ModMain.dragControl))
-            return;
-        // 改变值
-        if (e.Key == Key.Left)
+        if (getHintText is null || !IsLoaded || !IsEnabled) return;
+        TextHint.Text = getHintText.DynamicInvoke(Value)?.ToString() ?? "";
+        var typeface = new Typeface(TextHint.FontFamily, TextHint.FontStyle, TextHint.FontWeight, TextHint.FontStretch);
+        var text = new FormattedText(TextHint.Text, Thread.CurrentThread.CurrentCulture,
+            TextHint.FlowDirection, typeface, TextHint.FontSize, TextHint.Foreground, ModBase.dpi);
+        TextHint.Width = Math.Min(480, Math.Ceiling(text.Width));
+        Popup.IsOpen = true;
+    }
+    private void RefreshColor()
+    {
+        LineFore.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty,
+            IsEnabled ? "Fluent.AccentFill" : "ColorBrushGray5");
+        ShapeDot.Opacity = IsEnabled ? 1 : .45;
+    }
+    private void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (_dragging || !IsEnabled || e.Key is not (Key.Left or Key.Right)) return;
+        var next = (long)Value + (e.Key == Key.Right ? (long)ValueByKey : -(long)ValueByKey);
+        e.Handled = true;
+        if (!SetUserValue((int)Math.Clamp(next, 0, MaxValue))) return;
+        RefreshPopup(); _popupTimer.Stop();
+        if (Popup.IsOpen) _popupTimer.Start();
+    }
+    private void StartRendering()
+    {
+        if (_rendering || !Animate) return;
+        _lastTime = _clock.Elapsed.TotalSeconds;
+        CompositionTarget.Rendering += OnRendering; _rendering = true;
+    }
+    private void StopRendering()
+    {
+        if (!_rendering) return;
+        CompositionTarget.Rendering -= OnRendering; _rendering = false;
+    }
+    private void OnRendering(object? sender, EventArgs e)
+    {
+        if (!Animate) { ResetInteraction(); return; }
+#if PCL_FRAME_DIAGNOSTICS
+        if(!FramePacingProbe.DiagnosticBypassDedup)
+#endif
+        if(e is RenderingEventArgs frame)
         {
-            changeByKey = true;
-            Value = (int)(Value - ValueByKey);
-            changeByKey = false;
-            e.Handled = true;
+            if(frame.RenderingTime==_lastRenderingTime)return;
+            _lastRenderingTime=frame.RenderingTime;
         }
-        else if (e.Key == Key.Right)
+        using var probe = PCL.Core.UI.Effects.FramePacingProbe.Log.Measure("slider.advance", e is RenderingEventArgs stamp ? stamp.RenderingTime.Ticks : -1);
+        var now = _clock.Elapsed.TotalSeconds;
+        Motion.Advance(now - _lastTime); _lastTime = now;
+        Apply();
+        if (!Motion.Active) StopRendering();
+    }
+    private void Apply()
+    {
+        if (ShapeDot is null || _trackBrush is null) return;
+        var progress = Math.Clamp(Motion.Position.Value, 0, 1);
+        LineFore.Width = TrackWidth * progress;
+        ThumbScale.ScaleX = Motion.ThumbScaleX; ThumbScale.ScaleY = Motion.ThumbScaleY;
+        var halfWidth = Math.Min(ActualWidth / 2, 20 * ThumbScale.ScaleX);
+        var center = Math.Clamp(30 + TrackWidth * progress, halfWidth, Math.Max(halfWidth, ActualWidth - halfWidth));
+        var left = center - 20;
+        ThumbOffset.X = left;
+        Popup.PlacementRectangle = new Rect(center, Math.Max(0, ActualHeight/2 - 12*ThumbScale.ScaleY), 0, 0);
+        ShapeDot.PressProgress = Math.Clamp(Motion.Press.Value, 0, 1);
+        // Only the sibling track is sampled here. The inherited backdrop is sampled
+        // separately by LiquidGlassSurface, so neither source contains this thumb.
+        var press = ShapeDot.PressProgress;
+        var gutter = 24 + ShapeDot.BlurRadius;
+        var expanded = new Rect(-gutter, -gutter, 40 + 2*gutter, 24 + 2*gutter);
+        _trackSample.Clip = new RectangleGeometry(expanded);
+        using (var dc = _trackSample.RenderOpen())
         {
-            changeByKey = true;
-            Value = (int)(Value + ValueByKey);
-            changeByKey = false;
-            e.Handled = true;
-        }
-        else
-        {
-            return;
+            dc.DrawRectangle(Brushes.Transparent, null, expanded);
+            dc.PushTransform(new ScaleTransform(2d/3 + press/3, press, 20, 12));
+            dc.DrawRectangle(_trackBrush, null, new Rect(30 - left, 9, TrackWidth, 6));
+            dc.Pop();
         }
 
-        // 更新 Popup
-        if (getHintText is not null)
-        {
-            RefreshPopup();
-            ModAnimation.AniStop("MySlider KeyPopup " + Uuid);
-            ModAnimation.AniStart(
-                ModAnimation.AaCode(() => Popup.IsOpen = false, (int)Math.Round(700d * ModAnimation.aniSpeed)),
-                "MySlider KeyPopup " + Uuid);
-        }
+        ShapeDot.RefreshBackdropCoordinates();
     }
 }

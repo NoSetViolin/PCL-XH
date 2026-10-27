@@ -10,7 +10,8 @@ using PCL.Core.UI.Theme;
 namespace PCL;
 internal static class FluentQa
 {
-    private static readonly string Root = Path.Combine(Path.GetTempPath(), "pcl-ui-efficiency-integration");
+    private static readonly string Root = Environment.GetEnvironmentVariable("PCL_FRAME_QA_ROOT")
+        ?? Path.Combine(Path.GetTempPath(), "pcl-ui-efficiency-integration");
     [ModuleInitializer] public static void Initialize()
     {
         foreach(var pair in new[] { ("PCL_PATH", "instance"), ("PCL_PATH_SHARED", "shared"), ("PCL_PATH_LOCAL", "local"), ("PCL_PATH_TEMP", "temp") })
@@ -69,6 +70,18 @@ internal static class FluentQa
             };
             networkDialogTimer.Start();
             var output=Path.Combine(Root,"screenshots"); Directory.CreateDirectory(output);
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"frame-pacing-only.flag")))
+            {
+                await FramePacingSmoke.Run(form,Root,report);
+                File.WriteAllLines(Path.Combine(Root,"frame-pacing-report.txt"),report);return;
+            }
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"slider-only.flag")) || File.Exists(Path.Combine(AppContext.BaseDirectory,"slider-fixture-only.flag")))
+            {
+                await SliderSmoke.Run(form, output, report);
+                if (!File.Exists(Path.Combine(AppContext.BaseDirectory,"slider-fixture-only.flag")))
+                    await AuditSettingsLayouts(form, output, report);
+                File.WriteAllLines(Path.Combine(Root,"slider-report.txt"),report);return;
+            }
             if(File.Exists(Path.Combine(AppContext.BaseDirectory,"animation-scheduler-only.flag")))
             {
                 await FramePerformanceSmoke.CheckAnimationScheduler(report);
@@ -906,7 +919,7 @@ internal static class FluentQa
                 foreach(var card in VisualDescendants(page).OfType<MyCard>().Where(card=>card.CanSwap && card.IsSwapped).ToArray()) card.IsSwapped=false;
                 var conditional=new List<(System.Windows.FrameworkElement Element,System.Windows.Visibility Visibility)>();
                 if(page is PageSetupUI appearance)
-                    foreach(var element in new System.Windows.FrameworkElement[]{appearance.PanBackgroundSuit,appearance.PanCustomPreset,appearance.PanAccent,appearance.PanBlurValue})
+                    foreach(var element in new System.Windows.FrameworkElement[]{appearance.PanBackgroundSuit,appearance.PanCustomPreset,appearance.PanAccent,appearance.PanBlurValue,appearance.PanBackgroundOpacity,appearance.PanBackgroundBlur,appearance.PanMusicVolume})
                     { conditional.Add((element,element.Visibility));element.Visibility=System.Windows.Visibility.Visible; }
                 await Task.Delay(300);form.UpdateLayout();
                 var scroll=page.PanScroll;
