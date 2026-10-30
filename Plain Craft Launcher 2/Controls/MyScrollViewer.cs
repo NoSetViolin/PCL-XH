@@ -7,6 +7,14 @@ namespace PCL;
 
 public class MyScrollViewer : ScrollViewer
 {
+    // Inherited from the body page; navigation sidebars keep their normal extent.
+    public static readonly DependencyProperty ScrollEndSpacingProperty = DependencyProperty.RegisterAttached(
+        "ScrollEndSpacing", typeof(double), typeof(MyScrollViewer),
+        new FrameworkPropertyMetadata(0d, FrameworkPropertyMetadataOptions.Inherits));
+
+    public static double GetScrollEndSpacing(DependencyObject target) => (double)target.GetValue(ScrollEndSpacingProperty);
+    public static void SetScrollEndSpacing(DependencyObject target, double value) => target.SetValue(ScrollEndSpacingProperty, value);
+
     public static readonly DependencyProperty FixedHeaderProperty = DependencyProperty.Register(
         nameof(FixedHeader), typeof(object), typeof(MyScrollViewer),
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsMeasure, (sender, e) =>

@@ -10,6 +10,8 @@ public class MyPageRight : AdornerDecorator
 {
     public MyPageRight()
     {
+        // Clear the 64 DIP dock, its 16 DIP bottom inset and a 16 DIP breathing gap.
+        MyScrollViewer.SetScrollEndSpacing(this, 96d);
         Loaded += (_, _) =>
         {
             // A scene used as a VisualBrush can acquire an additional inheritance

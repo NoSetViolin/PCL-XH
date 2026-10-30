@@ -28,9 +28,9 @@
         <Description>Minecraft 启动器 (作者: 龙腾猫跃; 经社区二次开发版本)</Description>
         <Product>PCL XH</Product>
         <Copyright>Copyright © 龙腾猫跃 2016. All Rights Reserved.</Copyright>
-        <AssemblyVersion>26.1027.0.0</AssemblyVersion>
-        <FileVersion>26.1027.0.0</FileVersion>
-        <InformationalVersion>26.01027</InformationalVersion>
+        <AssemblyVersion>26.1030.0.0</AssemblyVersion>
+        <FileVersion>26.1030.0.0</FileVersion>
+        <InformationalVersion>26.01030</InformationalVersion>
         <NoWarn>
             41999;42016;42017;42018;42019;42020;42021;42022;42032;42036;42314;
             VSTHRD002;VSTHRD003;VSTHRD110;VSTHRD200
@@ -38,6 +38,11 @@
         <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.vb</DefaultItemExcludes>
         <CETCompat>false</CETCompat>
     </PropertyGroup>
+    <!-- Empty release version denotes DeveloperBeta, identified by the build number.
+         Published builds can set the full tag, e.g. -p:LauncherReleaseVersion=beta-26.0.1. -->
+    <ItemGroup>
+        <AssemblyMetadata Include="LauncherReleaseVersion" Value="$(LauncherReleaseVersion)" />
+    </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <OutputPath>bin\Debug\</OutputPath>
         <DebugSymbols>true</DebugSymbols>

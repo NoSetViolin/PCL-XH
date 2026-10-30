@@ -81,6 +81,7 @@ internal sealed class FramePacingSmoke : EventListener
         var oldBackground=form.ImgBack.Background;var oldVideoSource=form.VideoBack.Source;
         var oldBackgroundVisibility=form.ImgBack.Visibility;var oldBackgroundOpacity=form.ImgBack.Opacity;
         var oldColorMode=Config.Preference.Theme.ColorMode;
+        var oldWallpaperSource=Config.Preference.Background.WallpaperSource;
         var wallpaper=new DrawingBrush(new GeometryDrawing(new LinearGradientBrush(Color.FromRgb(24,52,92),Color.FromRgb(174,95,66),35),null,
             Geometry.Parse("M0,0 L1280,0 1280,800 0,800Z M0,420 C260,110 620,690 1280,230 L1280,800 0,800Z"))){Stretch=Stretch.UniformToFill};
         wallpaper.Freeze();
@@ -91,6 +92,12 @@ internal sealed class FramePacingSmoke : EventListener
         {
             form.Width=1280;form.Height=800;
             Config.Preference.Theme.ColorMode=ColorMode.Dark;ThemeService.RefreshColorMode();FluentTheme.Refresh();
+            // Startup can still be fetching an online wallpaper after WindowCreated.
+            // Cancel it before installing the fixture so no asynchronous completion
+            // replaces the scene midway through a trial.
+            Config.Preference.Background.WallpaperSource=0;
+            ModBackground.CancelPending();
+            await ModBackground.CurrentTask;
             form.VideoBack.Source=null;
             form.ImgBack.Background=wallpaper;form.ImgBack.Visibility=Visibility.Visible;form.ImgBack.Opacity=1;
             if(File.Exists(Path.Combine(AppContext.BaseDirectory,"frame-pacing-verify-only.flag")))
@@ -144,6 +151,7 @@ internal sealed class FramePacingSmoke : EventListener
             form.ImgBack.Background=oldBackground;form.ImgBack.Visibility=oldBackgroundVisibility;form.ImgBack.Opacity=oldBackgroundOpacity;
             form.VideoBack.Source=oldVideoSource;
             Config.Preference.Theme.ColorMode=oldColorMode;ThemeService.RefreshColorMode();FluentTheme.Refresh();
+            Config.Preference.Background.WallpaperSource=oldWallpaperSource;
         }
         Visual Freeze(Visual visual)
         {

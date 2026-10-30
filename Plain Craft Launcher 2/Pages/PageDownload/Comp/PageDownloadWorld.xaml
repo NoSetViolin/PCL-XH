@@ -14,5 +14,13 @@
 
 
 
+
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.World.Adventure}" Tag="248/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.World.Creative}" Tag="249/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Modpack.MiniGame}" Tag="250/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.World.Parkour}" Tag="251/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.World.Puzzle}" Tag="252/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.World.Survival}" Tag="253/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.World.ModWorld}" Tag="4464/" />
     </local:PageComp>
 </local:MyPageRight>

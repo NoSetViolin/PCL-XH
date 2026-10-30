@@ -1,4 +1,4 @@
-﻿<local:MyPageRight
+<local:MyPageRight
     x:Class="PCL.PageSetupAbout"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -17,6 +17,41 @@
             x:Name="PanMain"
             Margin="25,10"
             Grid.IsSharedSizeScope="True">
+            <local:MyCard x:Name="CardLauncherUpdate" Margin="0,15,0,0" Title="{DynamicResource Setup.Update.Title}">
+                <StackPanel x:Name="PanLauncherUpdate" Margin="21,40,21,18">
+                    <TextBlock x:Name="LabCurrentLauncherVersion" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <WrapPanel Margin="0,12,0,0">
+                        <TextBlock Text="{DynamicResource Setup.Update.Channel}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <local:MyComboBox x:Name="ComboUpdateChannel" Width="180" SelectedIndex="0">
+                            <local:MyComboBoxItem Content="DeveloperBeta" />
+                            <local:MyComboBoxItem Content="PublicBeta" />
+                            <local:MyComboBoxItem Content="Release" />
+                        </local:MyComboBox>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,12,0,0">
+                        <local:MyButton x:Name="BtnCheckLauncherUpdate" Text="{DynamicResource Setup.Update.Check}"
+                                        Margin="0,0,12,8" Click="BtnCheckLauncherUpdate_Click" />
+                        <local:MyButton x:Name="BtnInstallLauncherUpdate" Text="{DynamicResource Setup.Update.Install}" ColorType="Highlight" IsEnabled="False"
+                                        Margin="0,0,12,8" Click="BtnInstallLauncherUpdate_Click" />
+                        <local:MyButton x:Name="BtnDownloadLauncherUpdate" Text="{DynamicResource Setup.Update.Download}" IsEnabled="False"
+                                        Margin="0,0,12,8" Click="BtnDownloadLauncherUpdate_Click" />
+                        <local:MyButton Text="{DynamicResource Setup.Update.Releases}" Margin="0,0,12,8"
+                                        local:CustomEventService.EventType="OpenUrl" local:CustomEventService.EventData="https://github.com/NoSetViolin/PCL-XH/releases" />
+                        <local:MyButton x:Name="BtnCancelLauncherUpdate" Text="{DynamicResource Common.Action.Cancel}" Visibility="Collapsed"
+                                        Margin="0,0,12,8" Click="BtnCancelLauncherUpdate_Click" />
+                        <local:MyButton x:Name="BtnOpenLauncherUpdate" Text="{DynamicResource Setup.Update.OpenFolder}" Visibility="Collapsed"
+                                        Margin="0,0,12,8" Click="BtnOpenLauncherUpdate_Click" />
+                    </WrapPanel>
+                    <TextBlock x:Name="LabLauncherUpdateStatus" Margin="0,12,0,0" TextWrapping="Wrap"
+                               Text="{DynamicResource Setup.Update.Ready}" />
+                    <TextBlock x:Name="LabLatestLauncherVersion" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
+                    <ScrollViewer x:Name="PanLauncherReleaseNotes" MaxHeight="180" Margin="0,10,0,0"
+                                  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <TextBlock x:Name="LabLauncherReleaseNotes" TextWrapping="Wrap" />
+                    </ScrollViewer>
+                    <ProgressBar x:Name="ProgressLauncherUpdate" Minimum="0" Maximum="100" Height="4" Margin="0,12,0,0" Visibility="Collapsed" />
+                </StackPanel>
+            </local:MyCard>
             <local:MyCard Margin="0,15" Title="{DynamicResource Setup.About.Title}">
                 <Grid Margin="21,40,21,16">
                     <Grid.RowDefinitions>

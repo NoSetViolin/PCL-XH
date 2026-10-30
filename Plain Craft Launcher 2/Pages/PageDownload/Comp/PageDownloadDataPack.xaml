@@ -23,5 +23,8 @@
         <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Server}" Tag="/social" />
         <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Library}" Tag="6950/library" />
 
+
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.DataPack.Fantasy}" Tag="6949/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Mod.ModRelated}" Tag="6946/" />
     </local:PageComp>
 </local:MyPageRight>

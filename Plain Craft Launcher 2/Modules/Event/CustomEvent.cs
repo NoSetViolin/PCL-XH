@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using PCL.Core.App;
 using PCL.Core.App.Configuration;
 using PCL.Core.App.Localization;
@@ -96,6 +96,13 @@ namespace PCL
             [EventType.ModifyVariable] = _WriteVariable,
             [EventType.WriteVariable] = _WriteVariable,
             [EventType.OpenHelp] = _OpenHelp,
+            [EventType.CheckUpdate] = (_, _) => ModBase.RunInUi(async () =>
+            {
+                ModMain.frmMain.PageChange(FormMain.PageType.Setup, FormMain.PageSubType.SetupAbout);
+                ModMain.frmSetupLeft.OpenCategory(FormMain.PageSubType.SetupAbout);
+                ModMain.frmSetupAbout ??= new PageSetupAbout();
+                await ModMain.frmSetupAbout.CheckLauncherUpdateAsync();
+            }),
         };
 
         /// <summary>

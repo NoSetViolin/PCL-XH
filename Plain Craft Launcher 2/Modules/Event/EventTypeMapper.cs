@@ -5,6 +5,7 @@ namespace PCL
         private static readonly Dictionary<string, string> ChineseToEnglish = new()
         {
             { "打开网页", "OpenUrl" },
+            { "检查更新", "CheckUpdate" },
             { "打开文件", "OpenFile" },
             { "执行命令", "ExecuteCommand" },
             { "启动游戏", "LaunchGame" },
@@ -29,7 +30,7 @@ namespace PCL
 
         public static readonly HashSet<string> UnsupportedTypes = new(StringComparer.Ordinal)
         {
-            "内存优化", "加入房间", "检查更新"
+            "内存优化", "加入房间"
         };
 
         public static bool TryToEnglish(string chineseName, out string englishName) =>

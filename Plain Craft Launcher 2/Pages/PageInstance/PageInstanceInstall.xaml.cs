@@ -35,7 +35,6 @@ public partial class PageInstanceInstall
 
     private void LoaderInit()
     {
-        disabledPageAnimControls.Add(BtnSelectStart);
         // PageLoaderInit(LoadMinecraft, PanLoad, PanBack, Nothing, DlClientListLoader, AddressOf LoadMinecraft_OnFinish)
         PageLoaderInit(LoadMinecraft, PanLoad, PanAllBack, null, ModDownload.dlClientListLoader, _ => GetCurrentInfo());
         LoadOptiFine.StateChanged += (_, _, _) => { OptiFine_Loaded(); ReloadSelected(); };
@@ -217,8 +216,6 @@ public partial class PageInstanceInstall
             return;
         isInSelectPage = true;
 
-        disabledPageAnimControls.Remove(BtnSelectStart);
-        BtnSelectStart.Show = true;
         autoSelectedFabricApi = false;
         autoSelectedOptiFabric = false;
         PanSelect.Visibility = Visibility.Visible;
@@ -330,9 +327,6 @@ public partial class PageInstanceInstall
         isInSelectPage = false;
 
         LoadMinecraft_OnFinish();
-
-        disabledPageAnimControls.Add(BtnSelectStart);
-        BtnSelectStart.Show = false;
 
         ClearSelected(); // 清除已选择项
         PanMinecraft.Visibility = Visibility.Visible;
@@ -448,14 +442,12 @@ public partial class PageInstanceInstall
             ItemSelect.Info = selectedInfo;
             BtnSelectStart.Text = Lang.Text("Instance.Install.Action.StartReset");
             _installAction = InstallAction.Reset;
-            BtnSelectStart.SvgIcon = "lucide/rotate-ccw";
         }
         else
         {
             ItemSelect.Info = currentInfo + " → " + selectedInfo;
             BtnSelectStart.Text = Lang.Text("Instance.Install.Action.StartModify");
             _installAction = InstallAction.Modify;
-            BtnSelectStart.SvgIcon = "lucide/pencil";
         }
 
         // Minecraft

@@ -4,6 +4,8 @@ using PCL.Core.App;
 using PCL.Core.App.Essentials;
 using PCL.Core.App.IoC;
 using PCL.Core.Utils.OS;
+using PCL.Core.Updates;
+using PCL.Core.App.Localization;
 
 namespace PCL;
 
@@ -15,6 +17,14 @@ internal static class Program
     [STAThread]
     public static void Main()
     {
+        var updateStartup = AtomicLauncherUpdate.ConsumeStartupContext();
+        Lifecycle.When(LifecycleState.Running, () =>
+        {
+            try { AtomicLauncherUpdate.AcknowledgeStartup(updateStartup, Environment.ProcessPath!); }
+            catch (Exception ex) { ModBase.Log(ex, "[Update] Startup acknowledgement failed"); }
+            if (AtomicLauncherUpdate.StartupFailureReport is not null)
+                ModBase.RunInUi(() => HintService.Hint(Lang.Text("Setup.Update.RolledBack"), HintType.Error));
+        });
         if (Basics.CommandLineArguments.Contains("--console")) KernelInterop.AllocateConsole();
 #if DEBUG
         if (Basics.CommandLineArguments.Contains("--debug"))

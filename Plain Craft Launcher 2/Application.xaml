@@ -224,9 +224,22 @@
                                 <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
                                                         CanContentScroll="{TemplateBinding CanContentScroll}"
                                                         CanHorizontallyScroll="False" CanVerticallyScroll="False"
-                                                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                        Content="{TemplateBinding Content}" Grid.Column="0"
-                                                        Margin="{TemplateBinding Padding}" Grid.Row="1" />
+                                                        Grid.Column="0"
+                                                        Margin="{TemplateBinding Padding}" Grid.Row="1">
+                                    <ScrollContentPresenter.Content>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <ContentPresenter Content="{TemplateBinding Content}"
+                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                              ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}" />
+                                            <Border x:Name="ScrollEndSpacer" Grid.Row="1" IsHitTestVisible="False"
+                                                    Height="{Binding Path=(local:MyScrollViewer.ScrollEndSpacing), RelativeSource={RelativeSource TemplatedParent}}" />
+                                        </Grid>
+                                    </ScrollContentPresenter.Content>
+                                </ScrollContentPresenter>
                                 <local:MyScrollBar x:Name="PART_VerticalScrollBar"
                                                    AutomationProperties.AutomationId="VerticalScrollBar"
                                                    Grid.Column="1" Maximum="{TemplateBinding ScrollableHeight}"
@@ -238,6 +251,11 @@
                                                    Background="{TemplateBinding Background}"
                                                    HorizontalAlignment="Right" />
                             </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="VerticalScrollBarVisibility" Value="Disabled">
+                                    <Setter TargetName="ScrollEndSpacer" Property="Height" Value="0" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>

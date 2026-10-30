@@ -22,7 +22,11 @@
                                HorizontalAlignment="Left" Text="{DynamicResource Download.Comp.Filter.Source}"
                                Margin="5,0,5,0" />
                             <Grid Margin="0,4,0,0">
-                                <TextBlock Text="Modrinth" Margin="5,4,0,0" />
+                                <local:MyComboBox x:Name="ComboSearchSource" MaxDropDownHeight="320">
+                                    <local:MyComboBoxItem Content="{DynamicResource Common.Option.All}" Tag="3" IsSelected="True" />
+                                    <local:MyComboBoxItem Content="CurseForge" Tag="1" />
+                                    <local:MyComboBoxItem Content="Modrinth" Tag="2" />
+                                </local:MyComboBox>
                             </Grid>
                         </StackPanel>
                         <StackPanel Width="168" Margin="0,0,12,8">

@@ -12,8 +12,10 @@ public static class Secrets
     public static string MSOAuthClientId { get; } = EnvironmentInterop.GetSecret("MS_CLIENT_ID", readEnvDebugOnly: true).ReplaceNullOrEmpty();
 
     /// <summary>
-    /// CurseForge API 的 Client ID
+    /// CurseForge API Key
     /// </summary>
+
+    public static string CurseForgeAPIKey { get; } = EnvironmentInterop.GetSecret("CURSEFORGE_API_KEY").ReplaceNullOrEmpty();
 
     /// <summary>
     /// 遥测密钥

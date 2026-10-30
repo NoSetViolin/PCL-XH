@@ -1,4 +1,4 @@
-﻿# Fluent UI smoke checks
+# Fluent UI smoke checks
 
 ## Sustained frame pacing investigation
 
@@ -36,6 +36,16 @@ The harness pins a frozen DrawingBrush wallpaper and dark theme and removes back
 for consistent process-to-process comparisons, restoring them on exit. For a paired baseline,
 add `frame-pacing-baseline.flag` to bypass the new timestamp filters in the same diagnostic
 binary. This bypass is compiled out of normal builds. Do not compare random startup wallpapers.
+The harness also cancels and awaits the startup online-wallpaper request before installing
+the fixture. A changed fixture aborts the run; partial trial files from an aborted run must
+not be accepted as a completed matrix. Empty response samples are reported as unavailable.
+
+The current automated wheel scenario is routed WPF input, **not real OS/hardware wheel input**.
+It cannot establish that a spike is exclusive to real wheel delivery. A hardware-input pass
+and successful system trace are still required for that conclusion. Likewise, a successful
+matrix is only a capture completion check: root-cause attribution and before/after acceptance
+require correlating spikes with stacks, layout and presentation events. Do not treat the
+diagnostic dedup-bypass switch as a baseline for unrelated production changes.
 
 For the WPF Liquid Glass material, hardware screenshot checks and shader build
 instructions, see [LIQUID-GLASS.md](LIQUID-GLASS.md).
@@ -100,11 +110,16 @@ and compares NeoForge metadata requests with system DNS and the app's DoH callba
 TLS validation remains enabled. HTTP 400/502 on a bare `/dns-query` GET does not establish
 whether that service supports valid DNS queries; use the separate A/AAAA probe results.
 
-Create `modrinth-only.flag` for the resource-source integration pass. It checks removal of
-the source selector and unsupported categories, blocking of legacy provider APIs before a request,
-five live Modrinth search types, category/loader/version filtering, project files and dependencies,
-and download page navigation. It fails if the run logs any removed API, mirror or expired DoH source.
-Results are written to `modrinth-report.txt`; it does not download or install game/resource files.
+Create `resources-only.flag` for the CurseForge/Modrinth integration pass. It checks
+source selection and filtering, API-key host scope, six live CurseForge resource types,
+Modrinth-only and mixed searches, result and file pagination, links and mixed ID lookup,
+a real small CDN fixture download with hash verification, and the source selector at two
+window sizes. Results are in `resources-report.txt`; fixture files stay under the isolated
+QA root and are never installed. See [CURSEFORGE.md](CURSEFORGE.md) for key injection.
+Use `local-updates-only.flag` for the installed-mod dual-source update checks described there.
+Use `launcher-update-only.flag` for three-channel launcher Release checks, simulated EXE
+download/hash verification, error states, UI layouts and a live read of the repository.
+See [Launcher-Releases.md](../Launcher-Releases.md) for publishing tags and build parameters.
 
 Create `install-header-only.flag` to check the installation name/download row at 810px and
 1280px window widths, in both themes with Chinese, English and German button labels.

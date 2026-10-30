@@ -1,9 +1,13 @@
-﻿<Project>
+<Project>
     <Target Name="EnableFramePacingDiagnostics" BeforeTargets="_GenerateCompileDependencyCache;CoreCompile">
         <PropertyGroup><DefineConstants>$(DefineConstants);PCL_FRAME_DIAGNOSTICS</DefineConstants></PropertyGroup>
     </Target>
     <ItemGroup Condition="'$(MSBuildProjectName)' == 'Plain Craft Launcher 2'">
         <Compile Include="$(MSBuildThisFileDirectory)FluentUiSmoke.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)CurseForgeSmoke.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)LocalModUpdatesSmoke.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)LauncherUpdateSmoke.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)AutoLauncherUpdateSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)FramePerformanceSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)FramePacingSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)BackgroundSmoke.cs" />

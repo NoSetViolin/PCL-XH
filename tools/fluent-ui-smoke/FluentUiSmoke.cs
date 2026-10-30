@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 // Included only by Inject.targets; never compiled into normal launcher builds.
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
@@ -182,76 +182,24 @@ internal static class FluentQa
                 }
                 File.WriteAllLines(Path.Combine(Root,"install-header-report.txt"),report);return;
             }
-            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"modrinth-only.flag")))
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"auto-launcher-update-only.flag")))
             {
-                var providerLogs=new System.Collections.Concurrent.ConcurrentQueue<string>();
-                void CaptureSources(PCL.Core.Logging.LogLevel level,string message,string? module,Exception? error)
-                {
-                    if(message.Contains("api.curseforge.com") || message.Contains("mod.mcimirror.top") || message.Contains("doh.pysio.online"))providerLogs.Enqueue(message);
-                }
-                PCL.Core.Logging.LogWrapper.OnLog+=CaptureSources;
-                try
-                {
-                    foreach(var url in new[]{"https://api.curseforge.com/v1/mods", "https://mod.mcimirror.top/curseforge/v1/mods"})
-                    {
-                        try {ModDownload.DlModRequest(url);throw new Exception("Removed API was not blocked");}
-                        catch(NotSupportedException) {report.Add("PASS removed resource API blocked before network: "+new Uri(url).Host);}
-                    }
-                    if(ModComp.ResolveLinkToProjectId("https://www.curseforge.com/minecraft/mc-mods/jei") is not null)throw new Exception("Removed resource link resolved");
-                    if(ModComp.CompRequest.GetCompProjectsByIds(new(){"123456"}).Count!=0)throw new Exception("Legacy provider favorite fetched");
-                    report.Add("PASS legacy resource links and numeric favorite IDs do not fetch removed provider");
-                    var pages=new PageComp[]{new PageDownloadMod().Content,new PageDownloadPack().Content,new PageDownloadResourcePack().Content,new PageDownloadShader().Content,new PageDownloadDataPack().Content};
-                    foreach(var page in pages)
-                    {
-                        if(page.FindName("ComboSearchSource") is not null)throw new Exception("Provider selector remains");
-                        foreach(var option in page.ComboSearchTag.Items.OfType<MyComboBoxItem>())
-                            if(option.Tag?.ToString() is {Length:>0} tag && tag.EndsWith('/'))throw new Exception("Removed provider-only category remains: "+tag);
-                    }
-                    var searches=new List<ModLoader.LoaderTask<ModComp.CompProjectRequest,int>>();
-                    foreach(var type in new[]{ModComp.CompType.Mod,ModComp.CompType.ModPack,ModComp.CompType.ResourcePack,ModComp.CompType.Shader,ModComp.CompType.DataPack})
-                    {
-                        var request=new ModComp.CompProjectRequest(type,new(),40){source=(ModComp.CompSourceType)1};
-                        var search=new ModLoader.LoaderTask<ModComp.CompProjectRequest,int>("Modrinth regression "+type,ModComp.CompProjectsGet);
-                        searches.Add(search);search.Start(request);
-                    }
-                    var deadline=DateTime.UtcNow.AddSeconds(45);
-                    while(searches.Any(s=>s.State==ModBase.LoadState.Loading) && DateTime.UtcNow<deadline)await Task.Delay(100);
-                    foreach(var search in searches)
-                    {
-                        if(search.State!=ModBase.LoadState.Finished)throw new Exception("Live search failed: "+search.name,search.Error);
-                        if(search.input.storage.results.Count==0 || search.input.storage.results.Any(p=>p.FromCurseForge))throw new Exception("Invalid Modrinth search results");
-                        if(search.input.source!=ModComp.CompSourceType.Modrinth)throw new Exception("Stale source selection not normalized");
-                        report.Add($"PASS live {search.input.type} search: {search.input.storage.results.Count} Modrinth results");
-                    }
-                    var filterRequest=new ModComp.CompProjectRequest(ModComp.CompType.Mod,new(),40){tag="406/adventure",modLoader=ModComp.CompLoaderType.Fabric,gameVersion="1.21.1"};
-                    var filtered=await Task.Run(()=>ModDownload.DlModRequest<System.Text.Json.Nodes.JsonObject>(filterRequest.GetModrinthAddress()));
-                    if(filtered["hits"]!.AsArray().Count==0)throw new Exception("Filtered Modrinth search returned no matches");
-                    report.Add("PASS live combined category/loader/game-version filtering");
-                    var shaderRequest=new ModComp.CompProjectRequest(ModComp.CompType.Shader,new(),40){tag="/fantasy/iris"};
-                    var shaderUrl=Uri.UnescapeDataString(shaderRequest.GetModrinthAddress());
-                    if(!shaderUrl.Contains("categories:fantasy") || !shaderUrl.Contains("categories:iris"))throw new Exception("Shader filters overwritten");
-                    var project=searches[0].input.storage.results.First();
-                    var files=await Task.Run(()=>ModComp.CompFilesGet(project.Id,false));
-                    if(files.Count==0 || files.Any(f=>f.FromCurseForge || f.DownloadUrls.Any(u=>u.Contains("mcimirror"))))throw new Exception("File list contains removed source");
-                    report.Add($"PASS live project/version/dependency lookup: {files.Count} Modrinth files");
-                    form.PageChange(FormMain.PageType.Download,FormMain.PageSubType.DownloadMod);await Task.Delay(1200);
-                    if(ModMain.frmDownloadLeft.FindName("ItemWorld") is not null)throw new Exception("Unsupported world download entry remains");
-                    foreach(var page in pages)
-                    {
-                        form.PageChange(FormMain.PageType.Download,page.PageType switch
-                        {
-                            ModComp.CompType.Mod=>FormMain.PageSubType.DownloadMod,ModComp.CompType.ModPack=>FormMain.PageSubType.DownloadPack,
-                            ModComp.CompType.ResourcePack=>FormMain.PageSubType.DownloadResourcePack,ModComp.CompType.Shader=>FormMain.PageSubType.DownloadShader,
-                            _=>FormMain.PageSubType.DownloadDataPack
-                        });
-                        await Task.Delay(650);
-                    }
-                    if(providerLogs.Any())throw new Exception("Removed provider used: "+providerLogs.First());
-                    report.Add("PASS download UI navigation and no requests to removed APIs, mirror or expired DoH");
-                    File.WriteAllLines(Path.Combine(Root,"modrinth-report.txt"),report);
-                }
-                finally {PCL.Core.Logging.LogWrapper.OnLog-=CaptureSources;}
-                return;
+                await AutoLauncherUpdateSmoke.Run(form,Root,report);return;
+            }
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"launcher-update-only.flag")))
+            {
+                await LauncherUpdateSmoke.Run(form,output,report);
+                File.WriteAllLines(Path.Combine(Root,"launcher-update-report.txt"),report);return;
+            }
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"local-updates-only.flag")))
+            {
+                await LocalModUpdatesSmoke.Run(output,report);
+                File.WriteAllLines(Path.Combine(Root,"local-updates-report.txt"),report);return;
+            }
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"resources-only.flag")))
+            {
+                await CurseForgeSmoke.Run(form,output,report);
+                File.WriteAllLines(Path.Combine(Root,"resources-report.txt"),report);return;
             }
             if(File.Exists(Path.Combine(AppContext.BaseDirectory,"network-only.flag")))
             {

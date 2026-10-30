@@ -108,6 +108,19 @@ public partial class PageDownloadLeft : IRefreshable
                 ItemShader.Checked = true;
                 break;
             }
+            case FormMain.PageSubType.DownloadWorld:
+            {
+                ModComp.compProjectCache.Clear();
+                ModComp.compFilesCache.Clear();
+                if (ModMain.frmDownloadWorld is not null)
+                {
+                    ModMain.frmDownloadWorld.Content.storage = new ModComp.CompProjectStorage();
+                    ModMain.frmDownloadWorld.Content.page = 0;
+                    ModMain.frmDownloadWorld.PageLoaderRestart();
+                }
+                ItemWorld.Checked = true;
+                break;
+            }
             case FormMain.PageSubType.DownloadClient:
             {
                 ModDownload.dlClientListLoader.Start(isForceRestart: true);
@@ -198,6 +211,7 @@ public partial class PageDownloadLeft : IRefreshable
         ItemDataPack.Check += PageCheck;
         ItemResourcePack.Check += PageCheck;
         ItemShader.Check += PageCheck;
+        ItemWorld.Check += PageCheck;
         ItemFavorites.Check += PageCheck;
         ItemClient.Check += PageCheck;
         ItemOptiFine.Check += PageCheck;
@@ -263,7 +277,10 @@ public partial class PageDownloadLeft : IRefreshable
                 return ModMain.frmDownloadShader;
             }
             case FormMain.PageSubType.DownloadWorld:
-                return PageGet(FormMain.PageSubType.DownloadInstall);
+            {
+                ModMain.frmDownloadWorld ??= new PageDownloadWorld();
+                return ModMain.frmDownloadWorld;
+            }
             case FormMain.PageSubType.DownloadCompFavorites:
             {
                 if (ModMain.frmDownloadCompFavorites is null)

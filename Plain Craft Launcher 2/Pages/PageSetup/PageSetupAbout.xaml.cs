@@ -18,6 +18,7 @@ public partial class PageSetupAbout
     public PageSetupAbout()
     {
         InitializeComponent();
+        InitializeLauncherUpdate();
         // Register the actual scroll owner directly. The metadata DataContext and
         // offscreen scene brush can leave the root ElementName binding unresolved.
         PanScroll = PanBack;

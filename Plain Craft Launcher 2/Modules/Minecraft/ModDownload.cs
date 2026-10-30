@@ -2007,10 +2007,9 @@ public static class ModDownload
     private static void EnsureResourceSource(string url)
     {
         var uri = new Uri(url);
-        if (uri.Host.Equals("api.curseforge.com", StringComparison.OrdinalIgnoreCase) ||
-            (uri.Host.Equals("mod.mcimirror.top", StringComparison.OrdinalIgnoreCase) &&
-             uri.AbsolutePath.StartsWith("/curseforge", StringComparison.OrdinalIgnoreCase)))
-            throw new NotSupportedException(Lang.Text("Download.Comp.Source.Removed"));
+        if (uri.Host.Equals("mod.mcimirror.top", StringComparison.OrdinalIgnoreCase) &&
+            uri.AbsolutePath.StartsWith("/curseforge", StringComparison.OrdinalIgnoreCase))
+            throw new NotSupportedException("The retired CurseForge mirror is unavailable. Use api.curseforge.com.");
     }
 
     #endregion

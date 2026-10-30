@@ -13,9 +13,9 @@ using static PCL.ModLoader;
 
 namespace PCL;
 
-public static class ModLocalComp
+public static partial class ModLocalComp
 {
-    private const int localModCacheVersion = 8; // Rebuild legacy provider metadata from Modrinth.
+    private const int localModCacheVersion = 9; // Re-query both providers after restoring CurseForge updates.
 
     private static readonly Lazy<HashCache> _hashCache = new(() =>
         new HashCache(ModBase.pathTemp + @"Cache\HashCache.db"));
@@ -2650,149 +2650,32 @@ public static class ModLocalComp
 
     private static void CompUpdateDetailLoad(LoaderTask<CompLocalLoaderData, int> loader)
     {
-        var mods = loader.input.detailInfo.Key;
-        var cache = loader.input.detailInfo.Value;
-        // 获取作为检查目标的加载器和版本
-        var modLoaders = loader.input.loaders;
-        var compType = loader.input.compType;
-        var mcInstance = loader.input.gameVersion.Info.VanillaName;
-
-        // 开始网络获取
-        ModBase.Log($"[Mod] 目标加载器：{string.Join("/", modLoaders)}，版本：{mcInstance}");
-        var endedThreadCount = 0;
-        var isFailed = false;
+        var input = loader.input;
+        var mods = input.detailInfo.Key;
+        var cache = input.detailInfo.Value;
+        var mcVersion = input.gameVersion.Info.VanillaName;
         var currentTaskId = Task.CurrentId ?? -1;
+        bool IsAborted() => loader.IsAbortedWithThread(currentTaskId);
+        ModBase.Log($"[Mod] 目标加载器：{string.Join("/", input.loaders)}，版本：{mcVersion}");
 
-        // 从 Modrinth 获取信息
-        ModBase.RunInNewThread(() =>
-        {
-            try
-            {
-                // 步骤 1：获取 Hash 与对应的工程 ID
-                var modrinthHashes = mods.Select(m => m.ModrinthHash).ToList();
-                var modrinthVersion = (JsonObject)ModBase.GetJson(ModDownload.DlModRequest(
-                    "https://api.modrinth.com/v2/version_files", "POST",
-                    $"{{\"hashes\": [\"{string.Join("\",\"", modrinthHashes)}\"], \"algorithm\": \"sha1\"}}",
-                    "application/json"));
-                ModBase.Log($"[Mod] 从 Modrinth 获取到 {modrinthVersion.Count} 个本地 Mod 的对应信息");
-
-                // 步骤 2：尝试读取工程信息缓存，构建其他 Mod 的对应关系
-                if (modrinthVersion.Count == 0) return;
-                var modrinthMapping = new Dictionary<string, List<LocalCompFile>>();
-                foreach (var Entry in mods)
-                {
-                    if (modrinthVersion[Entry.ModrinthHash] is null) continue;
-                    if (modrinthVersion[Entry.ModrinthHash]["files"][0]["hashes"]["sha1"].ToString() !=
-                        Entry.ModrinthHash) continue;
-
-                    var projectId = modrinthVersion[Entry.ModrinthHash]["project_id"].ToString();
-                    // 读取已加载的缓存，加快结果出现速度
-                    if (compProjectCache.ContainsKey(projectId) && Entry.Comp is null)
-                        Entry.Comp = compProjectCache[projectId];
-
-                    if (!modrinthMapping.ContainsKey(projectId)) modrinthMapping[projectId] = new List<LocalCompFile>();
-                    modrinthMapping[projectId].Add(Entry);
-
-                    // 记录对应的 CompFile
-                    var fileInfo = new CompFile((JsonObject)modrinthVersion[Entry.ModrinthHash], CompType.Mod);
-                    if (Entry.compFile is null || Entry.compFile.ReleaseDate < fileInfo.ReleaseDate)
-                        Entry.compFile = fileInfo;
-                }
-
-                if (loader.IsAbortedWithThread(currentTaskId)) return;
-                ModBase.Log($"[Mod] 需要从 Modrinth 获取 {modrinthMapping.Count} 个本地 Mod 的工程信息");
-
-                // 步骤 3：获取工程信息
-                if (!modrinthMapping.Any()) return;
-                var modrinthProject = (JsonArray)ModBase.GetJson(ModDownload.DlModRequest(
-                    $"https://api.modrinth.com/v2/projects?ids=[\"{string.Join("\",\"", modrinthMapping.Keys)}\"]",
-                    "GET", "", "application/json"));
-
-                foreach (var ProjectJson in modrinthProject)
-                {
-                    var project = new CompProject((JsonObject)ProjectJson);
-                    foreach (var Entry in modrinthMapping[project.Id]) Entry.Comp = project;
-                }
-
-                ModBase.Log("[Mod] 已从 Modrinth 获取本地 Mod 信息，继续获取更新信息");
-
-                // 步骤 4：获取更新信息
-                var targetLoaders = compType == CompType.DataPack
-                    ? "datapack"
-                    : string.Join("\",\"", modLoaders).ToLower();
-                var modrinthUpdate = (JsonObject)ModBase.GetJson(ModDownload.DlModRequest(
-                    "https://api.modrinth.com/v2/version_files/update", "POST",
-                    $"{{\"hashes\": [\"{string.Join("\",\"", modrinthMapping.SelectMany(l => l.Value.Select(m => m.ModrinthHash)))}\"], \"algorithm\": \"sha1\", " +
-                    $"\"loaders\": [\"{targetLoaders}\"],\"game_versions\": [\"{mcInstance}\"]}}", "application/json"));
-
-                foreach (var Entry in mods)
-                {
-                    if (modrinthUpdate[Entry.ModrinthHash] is null || Entry.compFile is null) continue;
-                    var updateFile = new CompFile((JsonObject)modrinthUpdate[Entry.ModrinthHash], CompType.Mod);
-                    if (!updateFile.Available) continue;
-
-                    if (ModBase.modeDebug)
-                        ModBase.Log($"[Mod] 本地文件 {Entry.compFile.FileName} 在 Modrinth 上的最新版为 {updateFile.FileName}");
-                    if (Entry.compFile.ReleaseDate >= updateFile.ReleaseDate ||
-                        Entry.compFile.Hash == updateFile.Hash) continue;
-
-                    // 设置更新日志与更新文件
-                    if (Entry.UpdateFile is not null && updateFile.Hash == Entry.UpdateFile.Hash)
-                    {
-                        Entry.changelogUrls.Add(
-                            $"https://modrinth.com/mod/{modrinthUpdate[Entry.ModrinthHash]["project_id"]}/changelog?g={mcInstance}");
-                        Entry.UpdateFile.DownloadUrls.AddRange(updateFile.DownloadUrls);
-                        Entry.UpdateFile = updateFile;
-                    }
-                    else if (Entry.UpdateFile is null || updateFile.ReleaseDate >= Entry.UpdateFile.ReleaseDate)
-                    {
-                        Entry.changelogUrls = new List<string>
-                        {
-                            $"https://modrinth.com/mod/{modrinthUpdate[Entry.ModrinthHash]["project_id"]}/changelog?g={mcInstance}"
-                        };
-                        Entry.UpdateFile = updateFile;
-                    }
-                }
-
-                ModBase.Log("[Mod] 从 Modrinth 获取本地 Mod 信息结束");
-            }
-            catch (Exception ex)
-            {
-                ModBase.Log(ex, "从 Modrinth 获取本地 Mod 信息失败");
-                isFailed = true;
-            }
-            finally
-            {
-                Interlocked.Increment(ref endedThreadCount);
-            }
-        }, "Mod List Detail Loader Modrinth");
-
-        // 等待线程结束
-        while (endedThreadCount < 1)
-        {
-            if (loader.IsAborted) return;
-            Thread.Sleep(10);
-        }
-
-        // 保存缓存
+        var completed = LoadLocalCompSources(mods, input.compType, input.loaders, mcVersion, IsAborted);
+        if (!completed.HasValue || IsAborted()) return;
         var cachedMods = mods.Where(m => m.Comp is not null).ToList();
-        ModBase.Log($"[Mod] 联网获取本地 Mod 信息完成，为 {cachedMods.Count} 个 Mod 更新缓存");
-        if (!cachedMods.Any()) return;
-
-        foreach (var Entry in cachedMods)
+        ModBase.Log($"[Mod] 双源联网获取本地 Mod 信息完成，为 {cachedMods.Count} 个 Mod 更新缓存");
+        if (!cachedMods.Any() || IsAborted()) return;
+        cache["version"] = localModCacheVersion;
+        foreach (var entry in cachedMods)
         {
-            Entry.compLoaded = !isFailed;
-            cache[Entry.ModrinthHash + mcInstance + string.Join("", modLoaders)] = Entry.ToJson();
+            entry.compLoaded = completed.Value;
+            cache[entry.ModrinthHash + mcVersion + string.Join("", input.loaders)] = entry.ToJson();
         }
-
+        if (IsAborted()) return;
         ModBase.WriteFile(Path.Combine(ModBase.pathTemp, "Cache", "LocalComp.json"),
             cache.ToJsonString(ModBase.modeDebug ? new JsonSerializerOptions(JsonCompat.SerializerOptions) { WriteIndented = true } : null));
-
-        // 刷新 UI
         ModBase.RunInUi(() =>
         {
             if (ModMain.frmInstanceMod?.Filter == PageInstanceCompResource.FilterType.CanUpdate)
-                ModMain.frmInstanceMod?.RefreshUI();
+                ModMain.frmInstanceMod.RefreshUI();
             else
                 ModMain.frmInstanceMod?.RefreshBars();
         });

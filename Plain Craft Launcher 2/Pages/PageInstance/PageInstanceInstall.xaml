@@ -1,4 +1,4 @@
-﻿<local:MyPageRight
+<local:MyPageRight
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:PCL" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,7 +9,7 @@
         <Grid x:Name="PanAllBack">
             <local:MyScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                   x:Name="PanBack">
-                <Grid Margin="25,10,25,75">
+                <Grid Margin="25,10,25,25">
                     <StackPanel Grid.Row="1" Name="PanMinecraft" Grid.IsSharedSizeScope="True" Margin="0,0,0,-10"
                                 Visibility="Collapsed">
                         <StackPanel.RenderTransform>
@@ -21,6 +21,21 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform />
                         </StackPanel.RenderTransform>
+                        <local:MyCard Margin="0,15,0,0" UseAnimation="False">
+                            <Grid x:Name="PanModifyHeader" Margin="15,7,15,7">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <local:MyListItem x:Name="ItemSelect" IsHitTestVisible="False" Margin="-7,0,0,0"
+                                                  Height="42" SnapsToDevicePixels="True" Type="None" />
+                                <local:MyButton x:Name="BtnSelectStart" Grid.Column="2"
+                                                Text="{DynamicResource Instance.Install.Action.StartModify}"
+                                                ColorType="Highlight" Click="BtnSelectStart_Click"
+                                                VerticalAlignment="Center" IsEnabled="False" />
+                            </Grid>
+                        </local:MyCard>
                         <local:MyHint Text="{DynamicResource Download.Install.Warning.LegacyOptiFabric}"
                                       Margin="0,10,0,0" x:Name="HintLegacyOptiFabric" Theme="Yellow" />
                         <local:MyHint Text="{DynamicResource Download.Install.Warning.LegacyFabricApi}"
@@ -37,12 +52,6 @@
                         <local:MyHint Text="{DynamicResource Download.Install.Warning.ModOptiFine}" Margin="0,1,0,7"
                                       x:Name="HintModOptiFine"
                                       IsWarn="False" />
-                        <local:MyCard Margin="0,15,0,0" UseAnimation="False">
-                            <StackPanel Margin="15,7,15,7">
-                                <local:MyListItem x:Name="ItemSelect" IsHitTestVisible="False" Margin="-7,0,0,0"
-                                                  Height="42" SnapsToDevicePixels="True" Type="None" />
-                            </StackPanel>
-                        </local:MyCard>
                         <local:MyCard Title="{DynamicResource Common.Installation.Minecraft}" Height="40" Margin="0,15,0,0"
                                       x:Name="CardMinecraft"
                                       PreviewSwap="CardMinecraft_PreviewSwap">
@@ -395,12 +404,6 @@
                     </StackPanel>
                 </Grid>
             </local:MyScrollViewer>
-            <local:MyExtraTextButton x:Name="BtnSelectStart"
-                                     Text="{DynamicResource Instance.Install.Action.StartModify}"
-                                     Click="BtnSelectStart_Click"
-                                     HorizontalAlignment="Center" VerticalAlignment="Bottom" IsEnabled="False"
-                                     LogoScale="0.95"
-                                     SvgIcon="lucide/download" />
         </Grid>
         <local:MyCard HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40,0" SnapsToDevicePixels="True"
                       x:Name="PanLoad" UseAnimation="False">

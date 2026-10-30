@@ -349,3 +349,5 @@ MaskFiles/
 
 # Local handoff docs (kept out of version control)
 /docs/
+# Local upstream decompilation/reference artifacts
+/PCLCE-反编译/

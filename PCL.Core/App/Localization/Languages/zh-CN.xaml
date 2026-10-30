@@ -3333,7 +3333,6 @@
     <sys:String x:Key="Main.Fluent.ActiveTasks">{0} 个任务进行中</sys:String>
     <sys:String x:Key="Main.Fluent.SignInToPlay">添加账号以开始</sys:String>
     <sys:String x:Key="Download.Comp.Filter.Options">筛选与排序</sys:String>
-    <sys:String x:Key="Download.Comp.Source.Removed">CurseForge 渠道已移除，请使用 Modrinth 资源。</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Source">背景来源</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Source.Original">原色背景</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Source.Landscape">随机风景</sys:String>
@@ -3345,4 +3344,36 @@
     <sys:String x:Key="Setup.Ui.Background.Online.Success">背景已更新</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Online.Failed">背景加载失败，已保留原色背景。请稍后重试。</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Online.KeptPrevious">背景加载失败，已保留上一张图片。请稍后重试。</sys:String>
+
+    <sys:String x:Key="Setup.Update.CurrentBeta">当前版本：DeveloperBeta · Build {0}</sys:String>
+    <!-- Launcher updates -->
+    <sys:String x:Key="Setup.Update.Title">检查更新</sys:String>
+    <sys:String x:Key="Setup.Update.Channel">更新通道</sys:String>
+    <sys:String x:Key="Setup.Update.Ready">检查 GitHub Releases 中的新版本。</sys:String>
+    <sys:String x:Key="Setup.Update.Current">当前版本：{0} {1}（Build {2}）</sys:String>
+    <sys:String x:Key="Setup.Update.Check">检查更新</sys:String>
+    <sys:String x:Key="Setup.Update.Download">下载 EXE</sys:String>
+    <sys:String x:Key="Setup.Update.Releases">GitHub 发布页</sys:String>
+    <sys:String x:Key="Setup.Update.OpenFolder">打开下载文件夹</sys:String>
+    <sys:String x:Key="Setup.Update.Checking">正在检查更新…</sys:String>
+    <sys:String x:Key="Setup.Update.NoReleases">目前还没有 {0} 通道的可用 Release。</sys:String>
+    <sys:String x:Key="Setup.Update.Latest">最新版本：{0} · {1}</sys:String>
+    <sys:String x:Key="Setup.Update.UpToDate">当前已是此通道的最新版本。</sys:String>
+    <sys:String x:Key="Setup.Update.NoExecutable">发现版本 {0}，但尚未上传适用于当前架构的 EXE，可前往发布页查看。</sys:String>
+    <sys:String x:Key="Setup.Update.Available">发现更新：{0} {1} · {2}</sys:String>
+    <sys:String x:Key="Setup.Update.SwitchAvailable">可切换至 {0} {1} · {2}</sys:String>
+    <sys:String x:Key="Setup.Update.Cancelled">操作已取消或超时，可以重试。</sys:String>
+    <sys:String x:Key="Setup.Update.CheckFailed">检查失败，可重试或打开 GitHub 发布页。{0}</sys:String>
+    <sys:String x:Key="Setup.Update.SaveTitle">保存新版启动器</sys:String>
+    <sys:String x:Key="Setup.Update.RunningFile">请选择其他保存位置；当前正在运行的 EXE 无法覆盖。</sys:String>
+    <sys:String x:Key="Setup.Update.Downloading">正在下载… {0}%</sys:String>
+    <sys:String x:Key="Setup.Update.Downloaded">下载完成：{0}。关闭当前启动器后，可用此文件替换旧 EXE。</sys:String>
+    <sys:String x:Key="Setup.Update.DownloadFailed">下载失败，可重试。{0}</sys:String>
+
+    <sys:String x:Key="Setup.Update.Install">更新并重启</sys:String>
+    <sys:String x:Key="Setup.Update.PackagedOnly">自动更新适用于发布的单文件 EXE；当前开发构建可使用“下载 EXE”。</sys:String>
+    <sys:String x:Key="Setup.Update.WaitingTasks">新版已下载，正在等待其他下载任务结束…</sys:String>
+    <sys:String x:Key="Setup.Update.Restarting">正在重启并安装新版…</sys:String>
+    <sys:String x:Key="Setup.Update.InstallFailed">自动更新失败，当前启动器继续运行。可重试或使用“下载 EXE”。{0}</sys:String>
+    <sys:String x:Key="Setup.Update.RolledBack">新版未能完成更新或启动，已恢复并启动原版本。</sys:String>
 </ResourceDictionary>

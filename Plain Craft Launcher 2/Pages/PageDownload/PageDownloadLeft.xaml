@@ -105,6 +105,17 @@
                     </x:Array>
                 </local:MyListItem.Buttons>
             </local:MyListItem>
+            <local:MyListItem IsNavigationChip="True" Margin="3,0" x:Name="ItemWorld" Type="RadioBox"
+                              IsScaleAnimationEnabled="False" Tag="7" Check="PageCheck"
+                              MinPaddingRight="8" MinHeight="40" VerticalAlignment="Top"
+                              Title="{DynamicResource Download.Left.World}" SvgIcon="lucide/earth">
+                <local:MyListItem.Buttons>
+                    <x:Array Type="{x:Type local:MyIconButton}">
+                        <local:MyIconButton Tag="7" ToolTip="{DynamicResource Common.Action.Refresh}" ActionTextResourceKey="Common.Action.Refresh"
+                                            ToolTipService.Placement="Right" Click="RefreshButton_Click" SvgIcon="lucide/refresh-cw" />
+                    </x:Array>
+                </local:MyListItem.Buttons>
+            </local:MyListItem>
             <local:MyListItem IsNavigationChip="True" Margin="3,0" x:Name="ItemFavorites" Type="RadioBox" IsScaleAnimationEnabled="False" Tag="8"
                               Check="PageCheck"
                               MinPaddingRight="8" MinHeight="40" VerticalAlignment="Top"

@@ -33,5 +33,17 @@
 
         <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Server}" Tag="435/social" />
         <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Library}" Tag="421/library" />
+
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Biomes}" Tag="407/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Dimensions}" Tag="410/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.OresResources}" Tag="408/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Structures}" Tag="409/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.PipesLogistics}" Tag="415/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Automation}" Tag="4843/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Energy}" Tag="417/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Redstone}" Tag="4558/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Farming}" Tag="416/" Margin="15,0,0,0" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Creative}" Tag="9026/" />
+        <local:MyComboBoxItem Content="{DynamicResource Download.Comp.Category.Display}" Tag="423/" />
     </local:PageComp>
 </local:MyPageRight>

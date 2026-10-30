@@ -3276,7 +3276,6 @@
     <sys:String x:Key="Main.Fluent.ActiveTasks">{0} active tasks</sys:String>
     <sys:String x:Key="Main.Fluent.SignInToPlay">Add account to play</sys:String>
     <sys:String x:Key="Download.Comp.Filter.Options">Filters and sorting</sys:String>
-    <sys:String x:Key="Download.Comp.Source.Removed">The CurseForge source has been removed. Use Modrinth resources instead.</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Source">Background source</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Source.Original">Original colours</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Source.Landscape">Random scenery</sys:String>
@@ -3289,4 +3288,36 @@
     <sys:String x:Key="Setup.Ui.Background.Online.Failed">Could not load the background. Original colours are retained. Try again later.</sys:String>
     <sys:String x:Key="Setup.Ui.Background.Online.KeptPrevious">Could not load the background. The previous image is retained. Try again later.</sys:String>
     <sys:String x:Key="Setup.Misc.System.MaxFps.Automatic">Automatic (display refresh rate)</sys:String>
+
+    <sys:String x:Key="Setup.Update.CurrentBeta">Current version: DeveloperBeta · Build {0}</sys:String>
+    <!-- Launcher updates -->
+    <sys:String x:Key="Setup.Update.Title">Check for updates</sys:String>
+    <sys:String x:Key="Setup.Update.Channel">Update channel</sys:String>
+    <sys:String x:Key="Setup.Update.Ready">Check GitHub Releases for a new version.</sys:String>
+    <sys:String x:Key="Setup.Update.Current">Current version: {0} {1} (Build {2})</sys:String>
+    <sys:String x:Key="Setup.Update.Check">Check for updates</sys:String>
+    <sys:String x:Key="Setup.Update.Download">Download EXE</sys:String>
+    <sys:String x:Key="Setup.Update.Releases">GitHub Releases</sys:String>
+    <sys:String x:Key="Setup.Update.OpenFolder">Open download folder</sys:String>
+    <sys:String x:Key="Setup.Update.Checking">Checking for updates…</sys:String>
+    <sys:String x:Key="Setup.Update.NoReleases">There are no available releases on the {0} channel yet.</sys:String>
+    <sys:String x:Key="Setup.Update.Latest">Latest version: {0} · {1}</sys:String>
+    <sys:String x:Key="Setup.Update.UpToDate">You are up to date on this channel.</sys:String>
+    <sys:String x:Key="Setup.Update.NoExecutable">Version {0} has no EXE for this architecture. See GitHub Releases.</sys:String>
+    <sys:String x:Key="Setup.Update.Available">Update available: {0} {1} · {2}</sys:String>
+    <sys:String x:Key="Setup.Update.SwitchAvailable">Available on the selected channel: {0} {1} · {2}</sys:String>
+    <sys:String x:Key="Setup.Update.Cancelled">Cancelled or timed out. You can retry.</sys:String>
+    <sys:String x:Key="Setup.Update.CheckFailed">Check failed. Retry or open GitHub Releases. {0}</sys:String>
+    <sys:String x:Key="Setup.Update.SaveTitle">Save launcher update</sys:String>
+    <sys:String x:Key="Setup.Update.RunningFile">Choose another location; the running EXE cannot be overwritten.</sys:String>
+    <sys:String x:Key="Setup.Update.Downloading">Downloading… {0}%</sys:String>
+    <sys:String x:Key="Setup.Update.Downloaded">Downloaded: {0}. Close the launcher, then use this file to replace the old EXE.</sys:String>
+    <sys:String x:Key="Setup.Update.DownloadFailed">Download failed. You can retry. {0}</sys:String>
+
+    <sys:String x:Key="Setup.Update.Install">Update and restart</sys:String>
+    <sys:String x:Key="Setup.Update.PackagedOnly">Automatic replacement requires a published single-file EXE. Use Download EXE for this development build.</sys:String>
+    <sys:String x:Key="Setup.Update.WaitingTasks">Update downloaded. Waiting for other downloads to finish…</sys:String>
+    <sys:String x:Key="Setup.Update.Restarting">Restarting to install the update…</sys:String>
+    <sys:String x:Key="Setup.Update.InstallFailed">Automatic update failed; the current launcher is still running. Retry or use Download EXE. {0}</sys:String>
+    <sys:String x:Key="Setup.Update.RolledBack">The update or new startup failed. The previous version has been restored and restarted.</sys:String>
 </ResourceDictionary>

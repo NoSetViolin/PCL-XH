@@ -39,6 +39,7 @@ public partial class PageComp
             // 页码
             CardPages.Visibility =
                 storage.results.Count > pageSize ||
+                storage.curseForgeOffset < storage.curseForgeTotal ||
                 storage.modrinthOffset < storage.modrinthTotal
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -48,6 +49,7 @@ public partial class PageComp
             BtnPageLeft.IsEnabled = page > 0;
             BtnPageLeft.Opacity = page > 0 ? 1d : 0.2d;
             var isRightEnabled = storage.results.Count > pageSize * (page + 1) ||
+                                 storage.curseForgeOffset < storage.curseForgeTotal ||
                                  storage.modrinthOffset <
                                  storage.modrinthTotal; // 由于 WPF 的未知 bug，读取到的 IsEnabled 可能是错误的值（#3319）
             BtnPageRight.IsEnabled = isRightEnabled;
@@ -265,6 +267,12 @@ public partial class PageComp
                 TextSearchVersion.Items.Insert(1, new MyComboBoxItem { Content = highestVersion });
         }
 
+        if (PageType == ModComp.CompType.World)
+        {
+            ComboSearchSource.SelectedIndex = 1;
+            ComboSearchSource.IsEnabled = false;
+        }
+
         // 根据页面类型控制加载器选择的显示
         if (PageType == ModComp.CompType.Shader)
         {
@@ -322,7 +330,7 @@ public partial class PageComp
             (ModComp.CompLoaderType)(PageType == ModComp.CompType.Mod || PageType == ModComp.CompType.ModPack
                 ? ModBase.Val(((MyComboBoxItem)ComboSearchLoader.SelectedItem).Tag)
                 : (double)ModComp.CompLoaderType.Any);
-        request.source = ModComp.CompSourceType.Modrinth;
+        request.source = (ModComp.CompSourceType)ModBase.Val(((MyComboBoxItem)ComboSearchSource.SelectedItem).Tag);
         request.sort = (ModComp.CompSortType)ModBase.Val(((MyComboBoxItem)ComboSearchSort.SelectedItem).Tag);
         return request;
     }
@@ -353,6 +361,7 @@ public partial class PageComp
         PanSearchBox.Text = "";
         TextSearchVersion.Text = Lang.Text("Download.Comp.Filter.Version.AllInputAvailable");
         TextSearchVersion.SelectedIndex = 0;
+        ComboSearchSource.SelectedIndex = PageType == ModComp.CompType.World ? 1 : 0;
         ComboSearchTag.SelectedIndex = 0;
         ComboSearchLoader.SelectedIndex = 0;
         ComboSearchShaderLoader.SelectedIndex = 0;

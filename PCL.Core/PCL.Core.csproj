@@ -95,6 +95,7 @@
         <Content Include="UI\Assets\Shaders\LICENSE.AndroidLiquidGlass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
         <Content Include="UI\Assets\Shaders\LiquidGlass.NOTICE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
         <Resource Include="UI\Assets\IconPacks\**\*.svg" />
+        <EmbeddedResource Include="Updates\ApplyLauncherUpdate.ps1" LogicalName="PCL.Core.Updates.ApplyLauncherUpdate.ps1" />
     </ItemGroup>
     <!-- 项目自定义源生成器 -->
     <ItemGroup>

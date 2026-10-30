@@ -21,9 +21,23 @@ def summarize(root):
         p99 = median(t["callbackIntervalsMs"]["p99"] for t in trials)
         over = [t["overTwoRefreshPeriods"] for t in trials if t["overTwoRefreshPeriods"] is not None]
         layouts = median(t["layoutUpdatedCount"] / max(1, t["callbackIntervalsMs"]["count"] + 1) for t in trials)
-        response = median(t["scrollResponseMs"]["p95"] for t in trials)
+        responses = [t["scrollResponseMs"]["p95"] for t in trials if t["scrollResponseMs"]["count"]]
+        response = f"{median(responses):.2f}" if responses else "unavailable"
         dup = sum(t["duplicateAnimationStamps"] for t in trials)
-        lines.append(f"| {mode} | {scenario} | {len(trials)} | {p95:.2f} | {p99:.2f} | {median(over) if over else 'unavailable'} | {layouts:.2f} | {response:.2f} | {dup} |")
+        lines.append(f"| {mode} | {scenario} | {len(trials)} | {p95:.2f} | {p99:.2f} | {median(over) if over else 'unavailable'} | {layouts:.2f} | {response} | {dup} |")
+    if not groups:
+        lines.append("INCOMPLETE: no saved trials found.")
+    completion = list(root.rglob("frame-pacing-report.txt"))
+    if not completion:
+        lines.append("INCOMPLETE: no completed harness report; saved trials may belong to an aborted run.")
+    for (mode, scenario), trials in sorted(groups.items()):
+        if len(trials) != 3 or {t["trial"] for t in trials} != {1, 2, 3}:
+            lines.append(f"INCOMPLETE: {mode}/{scenario} requires exactly trials 1, 2, 3; do not pool multiple runs.")
+        if any(t["droppedSamples"] for t in trials):
+            lines.append(f"INCOMPLETE: {mode}/{scenario} dropped probe samples.")
+    for path in sorted(root.rglob("*-trace-unavailable.txt")):
+        lines.append(f"Trace limitation ({path.name}): {path.read_text(encoding='utf-8-sig').strip()}")
+    lines.append("Root cause: unassigned; interval statistics alone do not explain spikes. Presentation and exact layout cost require trace analysis.")
     return "\n".join(lines) + "\n"
 
 
