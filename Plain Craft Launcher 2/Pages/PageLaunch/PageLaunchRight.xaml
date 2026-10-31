@@ -5,7 +5,9 @@
     <local:MyScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" x:Name="PanBack">
         <StackPanel Name="PanMain" MaxWidth="1120" Margin="16,16,16,88" Grid.IsSharedSizeScope="True">
             <local:ResponsiveColumnsPanel MinimumColumnWidth="300" SecondaryWidth="352" Gap="16" Margin="0,0,0,16">
-                <local:MyCard Margin="0" x:Name="RecentCard" HasMouseAnimation="False">
+                <!-- The panel stretches these cards to the same row height. Animating that
+                     arranged height feeds back into its next measure and causes oscillation. -->
+                <local:MyCard Margin="0" x:Name="RecentCard" HasMouseAnimation="False" UseAnimation="False">
                     <StackPanel Margin="20,16,20,20">
                         <Grid Height="40" Margin="0,0,0,8">
                             <TextBlock Text="{DynamicResource Main.Fluent.Recent}" FontSize="15" FontWeight="SemiBold"
@@ -19,7 +21,7 @@
                                    Foreground="{DynamicResource ColorBrushGray2}" TextWrapping="Wrap" />
                     </StackPanel>
                 </local:MyCard>
-                <local:MyCard Margin="0" x:Name="TasksCard" HasMouseAnimation="False">
+                <local:MyCard Margin="0" x:Name="TasksCard" HasMouseAnimation="False" UseAnimation="False">
                     <Grid Margin="20,16,20,20">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />

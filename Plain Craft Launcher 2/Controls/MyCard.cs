@@ -11,10 +11,6 @@ namespace PCL;
 
 public class MyCard : AnimatedBackgroundGrid
 {
-    // 动画
-    private const double dropShadowIdleOpacity = 0.07d;
-    private const double dropShadowHoverOpacity = 0.12d;
-
     public static readonly DependencyProperty TitleProperty =
         DependencyProperty.Register("Title", typeof(string), typeof(MyCard), new PropertyMetadata(""));
 
@@ -30,10 +26,11 @@ public class MyCard : AnimatedBackgroundGrid
     {
         MainChrome = new MyDropShadow
         {
-            Margin = new Thickness(-3, -3, -3, -3 - ModBase.GetWPFSize(1d)), ShadowRadius = 3d,
-            Opacity = dropShadowIdleOpacity, CornerRadius = new CornerRadius(20d)
+            // Keep the legacy slot/API for custom cards and folding child indices,
+            // but ordinary cards are flat, including while hovered.
+            Visibility = Visibility.Collapsed, IsHitTestVisible = false,
+            Opacity = 0, CornerRadius = new CornerRadius(20d)
         };
-        MainChrome.SetResourceReference(MyDropShadow.ColorProperty, "ColorObject1");
         Children.Insert(0, MainChrome);
         mainBorder = new LiquidGlassSurface { CornerRadius = new CornerRadius(20d), IsHitTestVisible = false };
         mainBorder.SetResourceReference(Border.BorderBrushProperty, "Fluent.Stroke");
@@ -199,11 +196,6 @@ public class MyCard : AnimatedBackgroundGrid
             aniList.Add(ModAnimation.AaColor(MainTextBlock, TextBlock.ForegroundProperty, "ColorBrush2", 90));
         if (MainSwap is not null)
             aniList.Add(ModAnimation.AaColor(MainSwap, Shape.FillProperty, "ColorBrush2", 90));
-        aniList.AddRange(new[]
-        {
-            ModAnimation.AaColor(MainChrome, MyDropShadow.ColorProperty, "ColorObject4", 90),
-            ModAnimation.AaOpacity(MainChrome, dropShadowHoverOpacity - MainChrome.Opacity, 90)
-        });
         if (!IsAnimating)
             ModAnimation.AniStart(aniList, "MyCard Mouse " + uuid);
     }
@@ -217,11 +209,6 @@ public class MyCard : AnimatedBackgroundGrid
             aniList.Add(ModAnimation.AaColor(MainTextBlock, TextBlock.ForegroundProperty, "ColorBrush1", 90));
         if (MainSwap is not null)
             aniList.Add(ModAnimation.AaColor(MainSwap, Shape.FillProperty, "ColorBrush1", 90));
-        aniList.AddRange(new[]
-        {
-            ModAnimation.AaColor(MainChrome, MyDropShadow.ColorProperty, "ColorObject1", 90),
-            ModAnimation.AaOpacity(MainChrome, dropShadowIdleOpacity - MainChrome.Opacity, 90)
-        });
         if (!IsAnimating)
             ModAnimation.AniStart(aniList, "MyCard Mouse " + uuid);
     }

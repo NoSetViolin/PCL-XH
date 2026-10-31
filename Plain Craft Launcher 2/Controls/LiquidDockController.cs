@@ -13,6 +13,7 @@ namespace PCL;
 internal sealed class LiquidDockController
 {
     private readonly FormMain _form;
+    private readonly HdrDockHighlight _hdrHighlight;
     internal LiquidTabMotion Motion { get; } = new();
     internal bool IsRendering => _rendering;
     private readonly Stopwatch _clock=Stopwatch.StartNew();
@@ -33,6 +34,7 @@ internal sealed class LiquidDockController
     internal LiquidDockController(FormMain form)
     {
         _form=form;
+        _hdrHighlight = new HdrDockHighlight(form, form.DockHighlight);
         _tabOverlay=new VisualBrush(_accentTabs) { ViewboxUnits=BrushMappingMode.Absolute,Stretch=Stretch.Fill,AutoLayoutContent=false };
         form.DockHighlight.TabOverlay=_tabOverlay;
         form.PrimaryNavigation.PreviewMouseLeftButtonDown+=Down;
@@ -185,5 +187,6 @@ internal sealed class LiquidDockController
         var gutter=24+_form.DockHighlight.BlurRadius;
         var sx=Motion.ThumbScaleX;var sy=Motion.ThumbScaleY;
         _tabOverlay.Viewbox=new Rect(x+width/2-width*sx/2-gutter*sx,32-28*sy-gutter*sy,(width+2*gutter)*sx,(56+2*gutter)*sy);
+        _hdrHighlight.Update(Motion.Press.Value, !PCL.Core.App.Config.System.DisableHardwareAcceleration);
     }
 }

@@ -28,12 +28,9 @@
             CornerRadius="12"
             GlassFrameThickness="0" />
     </WindowChrome.WindowChrome>
-    <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
+    <Grid x:Name="StartupRoot" Opacity="0" SnapsToDevicePixels="True" UseLayoutRounding="True">
         <Grid.RenderTransform>
-            <TransformGroup>
-                <RotateTransform x:Name="TransformRotate" Angle="-4" />
-                <TranslateTransform x:Name="TransformPos" X="0" Y="60" />
-            </TransformGroup>
+            <TranslateTransform x:Name="StartupOffset" Y="12" />
         </Grid.RenderTransform>
         <Rectangle Stroke="{x:Null}" StrokeThickness="0.0001" IsHitTestVisible="False" Height="10" VerticalAlignment="Top" Margin="16,0">
             <Rectangle.Fill>

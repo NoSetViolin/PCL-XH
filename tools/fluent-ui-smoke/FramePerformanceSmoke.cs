@@ -159,7 +159,7 @@ internal static class FramePerformanceSmoke
                         var visible = homeSurfaces.Count(surface => surface.IsVisible);
                         var tracked = homeSurfaces.Count(IsCoordinateTracking);
                         var graphs = homeSurfaces.Count(HasFullGlassGraph);
-                        if (lightweight && (tracked != 0 || graphs != 0))
+                        if (lightweight && (graphs != 0 || homeSurfaces.Any(HasUnexpectedLightweightTracking)))
                             throw new InvalidOperationException($"Lightweight homepage retained glass work: tracked={tracked}, graphs={graphs}");
                         if (!lightweight && lightweightProperty is not null && graphs == 0)
                             throw new InvalidOperationException("Original homepage mode did not restore its glass graph.");
@@ -271,7 +271,7 @@ internal static class FramePerformanceSmoke
                             var tracked = pageSurfaces.Count(IsCoordinateTracking);
                             var dock = visible.Where(surface => surface.Material is LiquidGlassMaterial.BottomTabs
                                 or LiquidGlassMaterial.BottomTabIndicator).ToArray();
-                            if (lightweight && (graphs != 0 || tracked != 0))
+                            if (lightweight && (graphs != 0 || pageSurfaces.Any(HasUnexpectedLightweightTracking)))
                                 throw new InvalidOperationException($"{page.Name} retained glass work in lightweight mode: tracked={tracked}, graphs={graphs}");
                             if (!lightweight && graphs == 0)
                                 throw new InvalidOperationException($"{page.Name} did not restore any glass graph in original mode.");
@@ -378,6 +378,9 @@ internal static class FramePerformanceSmoke
 
     private static bool IsCoordinateTracking(LiquidGlassSurface surface) =>
         PrivateField(surface, "_coordinateTracking") is true;
+
+    private static bool HasUnexpectedLightweightTracking(LiquidGlassSurface surface) =>
+        IsCoordinateTracking(surface) && surface.Material is not (LiquidGlassMaterial.Content or LiquidGlassMaterial.Chrome);
 
     private static IEnumerable<DependencyObject> Items(DependencyObject root)
     {

@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Plain Craft Launcher 2'">
+    <Compile Include="$(MSBuildThisFileDirectory)CardBlurSmoke.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\fluent-ui-smoke\LiquidGlassSmoke.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\fluent-ui-smoke\FramePerformanceSmoke.cs" />
+  </ItemGroup>
+</Project>

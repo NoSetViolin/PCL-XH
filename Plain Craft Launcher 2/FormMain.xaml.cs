@@ -81,6 +81,8 @@ public partial class FormMain
         HintWrapper.OnShow += HintService.HintWrapper_OnShow;
         // 加载 UI
         InitializeComponent();
+        ContentRendered += BeginStartupAnimation;
+        Closed += (_, _) => CompleteStartupAnimation();
         FluentTheme.Refresh();
         Opacity = 0d;
         try
@@ -181,8 +183,6 @@ public partial class FormMain
         // MinWidth = 50
         // #End If
         Topmost = false;
-        if (ModMain.frmStart is not null)
-            ModMain.frmStart.Close(new TimeSpan(0, 0, 0, 0, (int)Math.Round(400d / ModAnimation.aniSpeed)));
         // 更改窗口
         // Top = (GetWPFSize(My.Computer.Screen.WorkingArea.Height) - Height) / 2
         // Left = (GetWPFSize(My.Computer.Screen.WorkingArea.Width) - Width) / 2
@@ -190,22 +190,6 @@ public partial class FormMain
         ShowWindowToTop();
         var hwndSource = (HwndSource)PresentationSource.FromVisual(this);
         hwndSource.AddHook(WndProc);
-        ModAnimation.AniStart(new[]
-        {
-            ModAnimation.AaCode(() => ModAnimation.AniControlEnabled -= 1, 50),
-            ModAnimation.AaOpacity(this, Config.Preference.Theme.WindowOpacity / 1000d + 0.4d, 250, 100),
-            ModAnimation.AaDouble(i => TransformPos.Y += (double)i, -TransformPos.Y, 600,
-                100, new ModAnimation.AniEaseOutBack(ModAnimation.AniEasePower.Weak)),
-            ModAnimation.AaDouble(i => TransformRotate.Angle += (double)i,
-                -TransformRotate.Angle, 500, 100, new ModAnimation.AniEaseOutBack(ModAnimation.AniEasePower.Weak)),
-            ModAnimation.AaCode(() =>
-            {
-                RenderTransform = null;
-                isWindowLoadFinished = true;
-                ModBase.Log(
-                    $"[System] DPI：{ModBase.dpi}，系统版本：{Environment.OSVersion.VersionString}，PCL 位置：{Basics.ExecutablePath}");
-            }, after: true)
-        }, "Form Show");
         // Timer 启动
         ModAnimation.AniStart();
         ModMain.TimerMainStart();
@@ -246,6 +230,51 @@ public partial class FormMain
         }, "Start Loader", ThreadPriority.BelowNormal);
 
         ModBase.Log($"[Start] 第三阶段加载用时：{TimeUtils.GetTimeTick() - ModBase.applicationStartTick} ms");
+    }
+
+    private void BeginStartupAnimation(object? sender, EventArgs e)
+    {
+        // 首帧布局完成后才开始；只动画内容层，避免逐帧修改 HWND 透明度。
+        ContentRendered -= BeginStartupAnimation;
+        ModAnimation.AniControlEnabled -= 1;
+        ModMain.frmStart?.Close(TimeSpan.Zero);
+        StartupRoot.Opacity = 1;
+        StartupOffset.Y = 0;
+        if (!SystemParameters.ClientAreaAnimation || ModAnimation.aniSpeed >= 200)
+        {
+            CompleteStartupAnimation();
+            return;
+        }
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        ease.Freeze();
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180 / ModAnimation.aniSpeed))
+        {
+            EasingFunction = ease,
+            FillBehavior = FillBehavior.Stop
+        };
+        var slide = new DoubleAnimation(12, 0, TimeSpan.FromMilliseconds(260 / ModAnimation.aniSpeed))
+        {
+            EasingFunction = ease,
+            FillBehavior = FillBehavior.Stop
+        };
+        slide.Completed += (_, _) => CompleteStartupAnimation();
+        StartupRoot.BeginAnimation(OpacityProperty, fade);
+        StartupOffset.BeginAnimation(TranslateTransform.YProperty, slide);
+    }
+
+    private void CompleteStartupAnimation()
+    {
+        ContentRendered -= BeginStartupAnimation;
+        StartupRoot.BeginAnimation(OpacityProperty, null);
+        StartupOffset.BeginAnimation(TranslateTransform.YProperty, null);
+        StartupRoot.Opacity = 1;
+        StartupOffset.Y = 0;
+        StartupRoot.RenderTransform = null;
+        if (isWindowLoadFinished) return;
+        isWindowLoadFinished = true;
+        ModBase.Log(
+            $"[System] DPI：{ModBase.dpi}，系统版本：{Environment.OSVersion.VersionString}，PCL 位置：{Basics.ExecutablePath}");
     }
 
     // 根据打开次数触发的事件
@@ -458,6 +487,7 @@ public partial class FormMain
         // 关闭
         ModBase.RunInUiWait(() =>
         {
+            CompleteStartupAnimation();
             // 清理视频背景
             VideoBack.Stop();
             VideoBack.Source = null;

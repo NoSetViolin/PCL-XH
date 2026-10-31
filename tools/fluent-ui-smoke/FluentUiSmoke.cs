@@ -70,6 +70,11 @@ internal static class FluentQa
             };
             networkDialogTimer.Start();
             var output=Path.Combine(Root,"screenshots"); Directory.CreateDirectory(output);
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"homepage-layout-only.flag")))
+            {
+                await HomepageLayoutSmoke.Run(form,Root,report);
+                File.WriteAllLines(Path.Combine(Root,"homepage-layout-report.txt"),report);return;
+            }
             if(File.Exists(Path.Combine(AppContext.BaseDirectory,"frame-pacing-only.flag")))
             {
                 await FramePacingSmoke.Run(form,Root,report);

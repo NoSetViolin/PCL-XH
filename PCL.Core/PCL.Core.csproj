@@ -46,6 +46,8 @@
     <!-- NuGet 引用 -->
     <ItemGroup>
         <!-- UI -->
+        <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+        <PackageReference Include="Vortice.DirectComposition" Version="3.8.3" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
         <PackageReference Include="Wacton.Unicolour" Version="8.0.0" />
@@ -94,6 +96,7 @@
         <Resource Include="UI\Assets\Shaders\*.ps" />
         <Content Include="UI\Assets\Shaders\LICENSE.AndroidLiquidGlass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
         <Content Include="UI\Assets\Shaders\LiquidGlass.NOTICE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+        <Content Include="UI\Assets\Licenses\LICENSE.*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
         <Resource Include="UI\Assets\IconPacks\**\*.svg" />
         <EmbeddedResource Include="Updates\ApplyLauncherUpdate.ps1" LogicalName="PCL.Core.Updates.ApplyLauncherUpdate.ps1" />
     </ItemGroup>

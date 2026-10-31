@@ -55,9 +55,34 @@ The committed `.ps` is embedded in PCL.Core; ordinary builds do not need FXC.
 
 `FormMain` sets the inheritable `UseLightweightMaterial` attached property to `true`.
 When a surface requests it and uses `Content`, `Chrome`, `Action` or `Input`, the surface
-draws a rounded theme tint and border directly, without a `VisualBrush`, `BlurEffect`,
-`LiquidGlassEffect` or coordinate `LayoutUpdated` subscription. Light theme raises the
-minimum tint so text stays readable without local blur; dark theme keeps more transparency.
+draws a rounded theme tint and border without the per-control lens shader. `Content`
+and `Chrome` cards additionally sample one shared, live background at half resolution
+per background/radius/kernel combination. Its cached blur is capped at 12 DIP (6 pixels
+at half resolution); cards crop that shared visual using their background coordinates.
+One `BitmapCacheBrush` reuses the target visual's cache across cards; cards only apply
+a crop transform and rounded clip, with no brush-local cache. This follows the WPF
+[cached element reuse contract](https://learn.microsoft.com/en-us/dotnet/api/system.windows.media.bitmapcachebrush?view=windowsdesktop-10.0).
+The source viewbox is explicit, and stretched edge samples pad the shared source before
+blur. A 16-pixel cache gutter covers the blur/filter support; card coordinates account
+for that gutter. Transparency at the blur boundary must not mix the dark fallback into
+panels near a window edge. Uniform-input sidebar captures check interior edges as well
+as the exterior shadow region.
+Flat blur composites directly over the scene: it must not place an opaque
+`FallbackBrush` beneath the blurred cache. Cache transparency would otherwise reveal
+that fallback as a dark inner band (or a pale band in light mode). Opaque accessibility
+fallbacks remain in the disabled-glass path.
+Foreground children are never part of that cache. There are no screenshot readbacks,
+frame timers, or per-card blur effects. Coordinate tracking runs only for cards needing
+the blur; `Action` and `Input` washes keep their direct drawing path. Weak cache entries
+and unloading release card-held caches. Wallpaper/video changes propagate through the
+retained visual, while scrolling changes the crop. With blur disabled, software rendering,
+or no valid source, cards retain the readable flat tint. Blurred cards use a lighter tint
+to expose the softened wallpaper without blurring text.
+
+Ordinary `MyCard` surfaces have no outer shadow, including on hover. Their legacy
+shadow slot stays collapsed to preserve custom-card folding indices and API callers.
+The 1 DIP outline is a faint light gray in dark mode and dark gray in light mode;
+there is no black rim, bevel or lens shader in the lightweight card path.
 `Floating` popups and both `BottomTabs`/`BottomTabIndicator` materials never enter this
 path, even when the inherited value is set. Pages can opt out locally with
 `UseLightweightMaterial="False"` if a surface genuinely needs the full lens.

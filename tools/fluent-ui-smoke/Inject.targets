@@ -4,6 +4,7 @@
     </Target>
     <ItemGroup Condition="'$(MSBuildProjectName)' == 'Plain Craft Launcher 2'">
         <Compile Include="$(MSBuildThisFileDirectory)FluentUiSmoke.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)HomepageLayoutSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)CurseForgeSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)LocalModUpdatesSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)LauncherUpdateSmoke.cs" />

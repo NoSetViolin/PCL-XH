@@ -35,7 +35,7 @@ internal static class LauncherUpdateSmoke
         var page = ModMain.frmSetupAbout;
         Require(page is not null, "About/update page was not opened");
         page.LauncherUpdateClient = new GitHubReleaseUpdater(client);
-        Require(page.ComboUpdateChannel.Items.Count == 3 && page.LabCurrentLauncherVersion.Text.Contains("26.01030"),
+        Require(page.ComboUpdateChannel.Items.Count == 3 && page.LabCurrentLauncherVersion.Text.Contains(Basics.VersionName),
             "Current build or three-channel selector missing");
         foreach (var selected in new[] { 0, 1, 2 })
         {

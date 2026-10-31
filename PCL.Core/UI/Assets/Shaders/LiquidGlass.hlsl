@@ -79,19 +79,23 @@ float4 PixelShaderFunction(float2 uv : TEXCOORD) : COLOR {
     } else if(Controls.z>1.5) {
         float rest=.1*(1-Controls.w);
         color.rgb=lerp(color.rgb,Light.w>.5?1:0,rest);
-        color.rgb*=1-.03*Controls.w;
-        // Upstream inner shadow grows from 0 to 8 DIP with press progress.
-        color.rgb*=1-.15*Controls.w*saturate(1+sd/max(.001,8*Controls.w));
+        // Bottom-tab glass lights from its centre, rather than an outlined lens.
+        float2 centrePosition=p/max(size*.5,1);
+        float centreLight=exp2(-4.328*dot(centrePosition,centrePosition))*smoothstep(0,8,-sd);
+        float labelAlpha=tex2Dlod(Tabs,float4(refracted,0,0)).a;
+        color.rgb=lerp(color.rgb,1,.32*Controls.w*centreLight);
+        color.rgb=lerp(color.rgb,OverlayTint.rgb,labelAlpha);
     }
     float facing = dot(n, Light.xy);
     float rim = (Controls.z>.5 ? 1-smoothstep(.25,.75,-sd) : pow(saturate(1 + sd / 1.5), 1.4)) * Light.z;
+    if(Controls.z>1.5 && Controls.z<2.5) rim=0;
     // Directional bright rim and a restrained opposing inner shadow.
     if(Controls.z>.5) color.rgb=saturate(color.rgb+rim*abs(facing));
     else {
         color.rgb += rim * max(facing, 0) * (1 - color.rgb);
         color.rgb *= 1 - rim * max(-facing, 0) * 0.22;
     }
-    if(Controls.z>.5) {
+    if(Controls.z>.5 && !(Controls.z>1.5 && Controls.z<2.5)) {
         float dist=distance(uv*Dimensions.xy,Interaction.xy);
         float glow=1-smoothstep(Interaction.z*.5,Interaction.z,dist);
         color.rgb=saturate(color.rgb+Interaction.w*(.08+.15*glow));

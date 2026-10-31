@@ -1,5 +1,10 @@
 This product uses the following open source components:
 
+- Vortice.Windows (MIT License)
+  https://github.com/amerkoleci/Vortice.Windows
+  Includes Vortice.Mathematics and SharpGen.Runtime (MIT License).
+  License texts: UI/Assets/Licenses/LICENSE.*
+
 - SharpZipLib (MIT License)
   https://github.com/icsharpcode/SharpZipLib
 

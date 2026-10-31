@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
@@ -88,6 +89,8 @@ public class LiquidGlassSurface : Border
     private Geometry? _clip;
     private Size _clipSize;
     private CornerRadius _clipCorners;
+    private SharedCardBackdrop? _cardBackdrop;
+    private MatrixTransform? _cardTransform;
 
     public LiquidGlassSurface()
     {
@@ -125,7 +128,14 @@ public class LiquidGlassSurface : Border
         RequestsLightweightMaterial && GlassEnabled && !SystemParameters.HighContrast
         && RenderCapability.IsPixelShaderVersionSupported(3, 0);
 
-    private bool ShouldTrackCoordinates => Background is not null && (IsDockMaterial || !RequestsLightweightMaterial);
+    private bool UsesCardBackdrop => UsesLightweightMaterial && BlurRadius > 0
+        && Material is LiquidGlassMaterial.Content or LiquidGlassMaterial.Chrome
+        && RenderCapability.Tier >= 0x20000
+        && RenderOptions.ProcessRenderMode != RenderMode.SoftwareOnly
+        && PresentationSource.FromVisual(this) is not HwndSource { CompositionTarget.RenderMode: RenderMode.SoftwareOnly };
+
+    private bool ShouldTrackCoordinates => Background is not null
+        && (IsDockMaterial || !RequestsLightweightMaterial || UsesCardBackdrop);
 
     private void UpdateCoordinateTracking()
     {
@@ -163,6 +173,13 @@ public class LiquidGlassSurface : Border
     private void ReleaseRenderGraph()
     {
         _source = null;
+        ReleaseLensGraph();
+        _cardBackdrop = null;
+        _cardTransform = null;
+    }
+
+    private void ReleaseLensGraph()
+    {
         _output = null;
         _sample = _lens = null;
         _backdrop = _sampleBrush = null;
@@ -176,8 +193,10 @@ public class LiquidGlassSurface : Border
     {
         base.OnPropertyChanged(e);
         if (e.Property == BackgroundProperty || e.Property == MaterialProperty || e.Property == GlassEnabledProperty
-            || e.Property == UseLightweightMaterialProperty)
+            || e.Property == UseLightweightMaterialProperty || e.Property == BlurRadiusProperty)
             UpdateCoordinateTracking();
+        if (e.Property == BackdropSourceProperty)
+            RefreshCoordinates();
     }
 
     private void OnLayoutUpdated(object? sender, EventArgs e) => RefreshCoordinates();
@@ -226,16 +245,19 @@ public class LiquidGlassSurface : Border
         if (RenderSize.Width <= 0 || RenderSize.Height <= 0) return;
         if (Background is null) { base.OnRender(dc); return; }
         var bounds = new Rect(RenderSize);
-        if (UsesLightweightMaterial)
-        {
-            DrawLightweightMaterial(dc, bounds);
-            return;
-        }
         if (_clip is null || _clipSize != RenderSize || _clipCorners != CornerRadius)
         {
             _clip = RoundedGeometry(bounds, CornerRadius);
             _clipSize = RenderSize; _clipCorners = CornerRadius;
         }
+        if (UsesLightweightMaterial)
+        {
+            if (_backdrop is not null) ReleaseLensGraph();
+            DrawLightweightMaterial(dc, bounds);
+            return;
+        }
+        _cardBackdrop = null;
+        _cardTransform = null;
         dc.PushClip(_clip);
         if (!GlassEnabled || SystemParameters.HighContrast || !RenderCapability.IsPixelShaderVersionSupported(3, 0) || _source is null)
         {
@@ -244,8 +266,14 @@ public class LiquidGlassSurface : Border
             if(Material==LiquidGlassMaterial.BottomTabIndicator)
             {
                 var gutter=24+BlurRadius;
+                if(!SystemParameters.HighContrast && PressProgress>0)
+                {
+                    var glow=new RadialGradientBrush(Color.FromArgb((byte)(64*Math.Clamp(PressProgress,0,1)),255,255,255),Colors.Transparent);
+                    dc.DrawRectangle(glow,null,bounds);
+                }
                 dc.DrawRectangle(TabOverlay,null,new Rect(-gutter,-gutter,bounds.Width+2*gutter,bounds.Height+2*gutter));
-                dc.DrawRoundedRectangle(null,new Pen(SystemColors.HighlightBrush,2),new Rect(1,1,Math.Max(0,bounds.Width-2),Math.Max(0,bounds.Height-2)),CornerRadius.TopLeft,CornerRadius.TopLeft);
+                if(SystemParameters.HighContrast)
+                    dc.DrawRoundedRectangle(null,new Pen(SystemColors.HighlightBrush,2),new Rect(1,1,Math.Max(0,bounds.Width-2),Math.Max(0,bounds.Height-2)),CornerRadius.TopLeft,CornerRadius.TopLeft);
             }
         }
         else
@@ -348,20 +376,42 @@ public class LiquidGlassSurface : Border
 
     private void DrawLightweightMaterial(DrawingContext dc, Rect bounds)
     {
+        var blurred = UsesCardBackdrop && _source is not null && _sourceRect.Width > 0 && _sourceRect.Height > 0;
+        if (blurred)
+        {
+            _cardBackdrop = SharedCardBackdrop.Get(_source!, BlurRadius, BlurKernelType);
+            _cardTransform ??= new MatrixTransform();
+            var scaleX = bounds.Width / (_sourceRect.Width * SharedCardBackdrop.Scale);
+            var scaleY = bounds.Height / (_sourceRect.Height * SharedCardBackdrop.Scale);
+            _cardTransform.Matrix = new Matrix(scaleX, 0, 0, scaleY,
+                -(_sourceRect.X * SharedCardBackdrop.Scale + SharedCardBackdrop.Gutter) * scaleX,
+                -(_sourceRect.Y * SharedCardBackdrop.Scale + SharedCardBackdrop.Gutter) * scaleY);
+            dc.PushClip(_clip!);
+            // Composite blur over the real backdrop. An opaque fallback under a
+            // partially transparent cache creates a dark inner rim on flat cards.
+            dc.PushTransform(_cardTransform);
+            dc.DrawRectangle(_cardBackdrop.Brush, null, new Rect(_cardBackdrop.Visual.RenderSize));
+            dc.Pop();
+            dc.Pop();
+        }
+        else
+        {
+            _cardTransform = null;
+            _cardBackdrop = null;
+        }
         var background = Background;
         if (background is SolidColorBrush solid && solid.Opacity >= .999)
         {
-            // Native surfaces lose the shader's blurred backdrop. Light theme text is
-            // dark and needs a stronger neutral tint; dark theme keeps more wallpaper.
+            // Flat fallback needs a stronger tint. Blurred cards can reveal more wallpaper.
             var dark = FallbackBrush is SolidColorBrush fallback && fallback.Color.R + fallback.Color.G + fallback.Color.B < 384;
             if (solid.Color.A == 255)
             {
                 var maximumTint = Material switch
                 {
                     LiquidGlassMaterial.Input => dark ? .50 : .78,
-                    LiquidGlassMaterial.Chrome => dark ? .32 : .84,
+                    LiquidGlassMaterial.Chrome => dark ? .32 : blurred ? .62 : .84,
                     LiquidGlassMaterial.Action => dark ? .34 : .70,
-                    _ => dark ? .50 : .86
+                    _ => dark ? .50 : blurred ? .62 : .86
                 };
                 var tint = Color.FromArgb((byte)Math.Round(255 * maximumTint), solid.Color.R, solid.Color.G, solid.Color.B);
                 var capped = new SolidColorBrush(tint);
@@ -374,9 +424,9 @@ public class LiquidGlassSurface : Border
                 var minimumTint = Material switch
                 {
                     LiquidGlassMaterial.Input => dark ? .56 : .78,
-                    LiquidGlassMaterial.Chrome => dark ? .60 : .84,
+                    LiquidGlassMaterial.Chrome => blurred ? (dark ? .48 : .62) : dark ? .60 : .84,
                     LiquidGlassMaterial.Action => dark ? .40 : .70,
-                    _ => dark ? .60 : .86
+                    _ => blurred ? (dark ? .48 : .62) : dark ? .60 : .86
                 };
                 var currentTint = solid.Color.A / 255d;
                 if (currentTint < minimumTint)
@@ -388,7 +438,7 @@ public class LiquidGlassSurface : Border
                 }
             }
         }
-        dc.DrawGeometry(background, null, RoundedGeometry(bounds, CornerRadius));
+        dc.DrawGeometry(background, null, _clip!);
         if (BorderBrush is null || BorderThickness.Left <= 0) return;
         var inset = BorderThickness.Left / 2;
         var strokeBounds = new Rect(inset, inset, Math.Max(0, bounds.Width - 2 * inset), Math.Max(0, bounds.Height - 2 * inset));

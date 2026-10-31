@@ -1,5 +1,14 @@
 # Fluent UI smoke checks
 
+Create `homepage-layout-only.flag` beside the isolated diagnostic executable to check
+homepage summary-card stability. It samples both card heights and the news container's
+position during idle after resizing, content growth/shrink and navigation back to Launch,
+plus Chinese/English and light/dark layouts at 810/1280 DIP. The old height animation is
+enabled briefly as a control; this isolated configuration may not reproduce sustained
+oscillation seen with real user data. Results are `homepage-layout-report.txt`, raw
+`homepage-layout-samples.csv`, and screenshots in the isolated QA root. Normal builds
+do not include this test or read its flag.
+
 ## Sustained frame pacing investigation
 
 Run `tools/fluent-ui-smoke/Run-FramePacing.ps1 -OutputRoot artifacts/frame-pacing/baseline -SystemTrace`

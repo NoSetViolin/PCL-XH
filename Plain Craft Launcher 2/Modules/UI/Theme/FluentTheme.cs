@@ -86,8 +86,7 @@ internal static class FluentTheme
         SetBrush("Fluent.SliderTrack", SystemParameters.HighContrast ? SystemColors.WindowTextColor :
             dark ? Color.FromArgb(92, 120, 120, 128) : Color.FromArgb(51, 120, 120, 120));
         SetBrush("Fluent.Stroke", SystemParameters.HighContrast ? SystemColors.WindowTextColor :
-            Color.FromArgb(dark ? (byte)38 : (byte)24, dark ? (byte)255 : (byte)0,
-                dark ? (byte)255 : (byte)0, dark ? (byte)255 : (byte)0));
+            dark ? Color.FromArgb(44, 224, 232, 240) : Color.FromArgb(36, 80, 90, 106));
         app.Resources["Fluent.BlurRadius"] = transparent && PCL.Core.App.Config.Preference.Blur.IsEnabled
             ? Math.Clamp(PCL.Core.App.Config.Preference.Blur.Radius, 0, 64) * 1d : 0d;
         app.Resources["LiquidGlass.Enabled"] = transparent && RenderCapability.IsPixelShaderVersionSupported(3, 0);
