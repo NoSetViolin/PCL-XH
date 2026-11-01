@@ -24,6 +24,9 @@ public class MyCard : AnimatedBackgroundGrid
     // UI 建立
     public MyCard() : base(Border.BackgroundProperty)
     {
+        // The visible material is a non-interactive child; keep the card itself
+        // hit-testable so its title and empty header area can toggle folding.
+        Background = Brushes.Transparent;
         MainChrome = new MyDropShadow
         {
             // Keep the legacy slot/API for custom cards and folding child indices,

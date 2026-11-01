@@ -1,6 +1,6 @@
 # PCL XH 发布与更新
 
-当前程序为 **DeveloperBeta · Build 26.01031**。发布地址固定为
+当前程序为 **DeveloperBeta · Build 26.01101**。发布地址固定为
 <https://github.com/NoSetViolin/PCL-XH/releases>。
 
 ## 三个通道怎么发布
@@ -34,7 +34,7 @@
 在对应源码版本编译时，可以用 MSBuild 参数写入即将发布的完整 tag：
 
 ```powershell
-dotnet publish 'Plain Craft Launcher 2/Plain Craft Launcher 2.csproj' -c Release -r win-x64 --self-contained false -p:LauncherReleaseVersion=dev-26.01031
+dotnet publish 'Plain Craft Launcher 2/Plain Craft Launcher 2.csproj' -c Release -r win-x64 --self-contained false -p:LauncherReleaseVersion=dev-26.01101
 dotnet publish 'Plain Craft Launcher 2/Plain Craft Launcher 2.csproj' -c Release -r win-x64 --self-contained false -p:LauncherReleaseVersion=beta-26.0.1
 dotnet publish 'Plain Craft Launcher 2/Plain Craft Launcher 2.csproj' -c Release -r win-x64 --self-contained false -p:LauncherReleaseVersion=26.0.1
 ```

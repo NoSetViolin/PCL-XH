@@ -1,5 +1,13 @@
 # Fluent UI smoke checks
 
+Create `card-interaction-only.flag` beside the isolated diagnostic executable to check
+foldable version-card input in Chinese/English, light/dark themes, and 810/1280 DIP
+windows. It reproduces the missing header hit area as a negative control, checks
+header hit tests and routed expansion, file-row input, collapse/reopen, and one-time
+lazy initialization. It uses synthetic Jade file rows, without searching APIs or
+downloading mods. Results are `card-interaction-report.txt` and `card-*.png` under
+the isolated QA root (`PCL_FRAME_QA_ROOT`). This is not a hardware mouse end-to-end test.
+
 Create `homepage-layout-only.flag` beside the isolated diagnostic executable to check
 homepage summary-card stability. It samples both card heights and the news container's
 position during idle after resizing, content growth/shrink and navigation back to Launch,

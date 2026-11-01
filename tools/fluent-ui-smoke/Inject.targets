@@ -14,5 +14,6 @@
         <Compile Include="$(MSBuildThisFileDirectory)BackgroundSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)LiquidGlassSmoke.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)SliderSmoke.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)CardInteractionSmoke.cs" />
     </ItemGroup>
 </Project>
