@@ -16,7 +16,7 @@
 
 ## 版本与编译产出
 
-- 当前基线为 **DeveloperBeta，Build `26.01101`**。后续 db build 号按用户指定更新，不自行递增。(用户ps：其实db的build号有规律，今天是26年10月30号，那就是26.01030，如果是11月9号，那就是26.01109)
+- 当前基线为 **DeveloperBeta，Build `26.01102`**。后续 db build 号按用户指定更新，不自行递增。(用户ps：其实db的build号有规律，今天是26年10月30号，那就是26.01030，如果是11月9号，那就是26.01109)
 - 发布 EXE 固定命名为 **`xiaohanlaucher.exe`**，保留该拼写。
 - 标准交付目录为 `artifacts/<build>-<提交短 SHA>/Release/xiaohanlaucher.exe`。临时验证使用单独目录；正式交付应能对应准确的源码提交。
 - 正式构建使用 Release、Windows x64、单文件、framework-dependent 发布，关闭调试符号；保留现有凭据生成和注入流程。运行需要相应的 .NET Desktop Runtime。
@@ -30,7 +30,7 @@
 
 | 通道 | Tag 格式 | GitHub Pre-release |
 | --- | --- | --- |
-| DeveloperBeta | `dev-26.01101` | 是 |
+| DeveloperBeta | `dev-26.01102` | 是 |
 | PublicBeta | `beta-26.0.1` | 是 |
 | Release | `26.0.1`（也支持 `26`） | 否 |
 
