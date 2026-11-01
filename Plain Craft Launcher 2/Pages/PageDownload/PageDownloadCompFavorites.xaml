@@ -73,7 +73,7 @@
             </Grid>
         </local:MyScrollViewer>
         <local:MyCard x:Name="CardSelect" Visibility="Collapsed" Opacity="0"
-                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="25,25,25,0" UseAnimation="False"
+                      HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="25,25,25,96" UseAnimation="False"
                       HasMouseAnimation="False">
             <local:MyCard.RenderTransform>
                 <TranslateTransform x:Name="TransSelect" Y="-10" />

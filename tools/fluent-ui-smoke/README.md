@@ -1,5 +1,15 @@
 # Fluent UI smoke checks
 
+Create `dock-clearance-only.flag` beside the isolated diagnostic executable and set
+`PCL_LAYOUT_SOURCE_ROOT` to the repository root to check the export header, resource,
+datapack and favorite selection bars, and game-log operations. The matrix uses
+Chinese/English, light/dark, and 810x470/1280x800 windows on the actual content host
+and floating navigation. It checks page bounds, navigation clearance, three hit-test
+points per action, and export-header stability while scrolling, saving 40 screenshots
+and `dock-clearance-report.txt` under `PCL_FRAME_QA_ROOT`. These are source-XAML
+fixtures with page event handlers removed, not real exports, game sessions, or
+hardware mouse end-to-end tests. Normal builds omit the harness and its flags.
+
 Create `card-interaction-only.flag` beside the isolated diagnostic executable to check
 foldable version-card input in Chinese/English, light/dark themes, and 810/1280 DIP
 windows. It reproduces the missing header hit area as a negative control, checks

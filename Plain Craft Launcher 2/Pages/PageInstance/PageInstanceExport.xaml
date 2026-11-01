@@ -13,29 +13,35 @@
         </Grid.Resources>
         <local:MyScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                               x:Name="PanBack">
-            <StackPanel Margin="25,10,25,65">
-                <local:MyHint Margin="0,15,0,0" Text="{DynamicResource Instance.Export.ModrinthWarning}" Theme="Yellow"
-                              x:Name="HintOptiFine" />
-                <local:MyCard Margin="0,15">
+            <local:MyScrollViewer.FixedHeader>
+                <local:MyCard Margin="25,25,25,15">
                     <Grid Margin="22,15,25,15">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="0.3*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="44" />
                             <RowDefinition Height="44" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Text="{DynamicResource Instance.Export.PackName}" Margin="0,0,20,0" />
-                        <local:MyTextBox Grid.Row="0" Grid.Column="1" x:Name="TextExportName" MaxLength="100" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Left"
-                                   Text="{DynamicResource Instance.Export.PackVersion}" Margin="30,0,20,0" />
-                        <local:MyTextBox Grid.Row="0" Grid.Column="3" x:Name="TextExportVersion"
+                        <local:MyTextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" x:Name="TextExportName" MaxLength="100" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                   Text="{DynamicResource Instance.Export.PackVersion}" Margin="0,0,20,0" />
+                        <local:MyTextBox Grid.Row="1" Grid.Column="1" x:Name="TextExportVersion"
                                          Tag="VersionArgumentTitle" MaxLength="100" />
+                        <local:MyButton Grid.Row="1" Grid.Column="2" x:Name="BtnExport"
+                                        Text="{DynamicResource Instance.Export.StartExport}"
+                                        ColorType="Highlight" Height="35" Margin="16,0,0,0"
+                                        VerticalAlignment="Center" />
                     </Grid>
                 </local:MyCard>
+            </local:MyScrollViewer.FixedHeader>
+            <StackPanel Margin="25,0,25,15">
+                <local:MyHint Margin="0,0,0,15" Text="{DynamicResource Instance.Export.ModrinthWarning}" Theme="Yellow"
+                              x:Name="HintOptiFine" />
                 <local:MyCard Margin="0,0,0,15" x:Name="CardOptions" MinHeight="39">
                     <local:MyIconTextButton x:Name="BtnOverrideCancel" Height="24" HorizontalAlignment="Right"
                                             VerticalAlignment="Center" Margin="0,0,5,0"
@@ -284,9 +290,5 @@
                 </local:MyCard>
             </StackPanel>
         </local:MyScrollViewer>
-        <local:MyExtraTextButton HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                                 x:Name="BtnExport" Text="{DynamicResource Instance.Export.StartExport}"
-                                 LogoScale="1.1"
-                                 SvgIcon="lucide/package" />
     </Grid>
 </local:MyPageRight>

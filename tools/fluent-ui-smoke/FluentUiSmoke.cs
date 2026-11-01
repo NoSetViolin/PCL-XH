@@ -71,6 +71,11 @@ internal static class FluentQa
             };
             networkDialogTimer.Start();
             var output=Path.Combine(Root,"screenshots"); Directory.CreateDirectory(output);
+            if(File.Exists(Path.Combine(AppContext.BaseDirectory,"dock-clearance-only.flag")))
+            {
+                await DockClearanceSmoke.Run(form, output, report);
+                File.WriteAllLines(Path.Combine(Root,"dock-clearance-report.txt"),report);return;
+            }
             if(File.Exists(Path.Combine(AppContext.BaseDirectory,"card-interaction-only.flag")))
             {
                 await CardInteractionSmoke.Run(form,output,report);
