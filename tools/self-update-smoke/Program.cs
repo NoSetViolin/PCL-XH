@@ -3,6 +3,11 @@ using System.Reflection;
 using PCL.Core.Updates;
 
 // A disposable executable for testing Windows image locks, restart and rollback.
+if (AtomicLauncherUpdate.RunHelperIfRequested() is { } helperExitCode)
+{
+    Environment.ExitCode = helperExitCode;
+    return;
+}
 var generation = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyMetadataAttribute>()
     .Single(a => a.Key == "FixtureGeneration").Value!;
 var root = AppContext.BaseDirectory;

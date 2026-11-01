@@ -45,7 +45,54 @@ public class AtomicLauncherUpdateTest
     }
 
     [TestMethod]
+    public async Task RestartRetriesTransientWindowsImageLocksAndPreservesNativeErrors()
+    {
+        var fixture = Environment.GetEnvironmentVariable("PCL_SELFUPDATE_FIXTURE_NEW");
+        if (fixture is null) Assert.Inconclusive("Publish tools/self-update-smoke and set PCL_SELFUPDATE_FIXTURE_NEW.");
+        var root = NewRoot();
+        try
+        {
+            var target = Path.Combine(root, "restart fixture.exe");
+            File.Copy(fixture, target);
+            File.WriteAllText(Path.Combine(root, "stop"), "");
+            var start = new ProcessStartInfo(target) { UseShellExecute = false, CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden, WorkingDirectory = root };
+            var logs = new System.Collections.Generic.List<string>();
+            using var handle = new FileStream(target, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+            var release = Task.Run(async () => { await Task.Delay(1500); handle.Dispose(); });
+            using (var child = LauncherUpdateHelper.StartWithRetry(() => Process.Start(start), TimeSpan.FromSeconds(10), logs.Add))
+            {
+                Assert.IsTrue(child.WaitForExit(10000));
+                Assert.AreEqual(0, child.ExitCode);
+            }
+            await release;
+            Assert.IsTrue(logs.Count >= 2, "Real Windows image lock must delay launch: " + string.Join("; ", logs));
+            Console.WriteLine("PASS real Windows image lock: " + string.Join("; ", logs));
+            var attempts = 0;
+            using (var child = LauncherUpdateHelper.StartWithRetry(() =>
+                   { if (++attempts <= 2) throw new System.ComponentModel.Win32Exception(5); return Process.Start(start); }, TimeSpan.FromSeconds(5)))
+            {
+                Assert.IsTrue(child.WaitForExit(10000));
+                Assert.AreEqual(0, child.ExitCode);
+                Assert.AreEqual(3, attempts);
+            }
+            attempts = 0;
+            var missing = Assert.ThrowsExactly<System.ComponentModel.Win32Exception>(() => LauncherUpdateHelper.StartWithRetry(() =>
+                { attempts++; throw new System.ComponentModel.Win32Exception(2); }, TimeSpan.FromSeconds(5)));
+            Assert.AreEqual(2, missing.NativeErrorCode);
+            Assert.AreEqual(1, attempts);
+            attempts = 0;
+            var denied = Assert.ThrowsExactly<System.ComponentModel.Win32Exception>(() => LauncherUpdateHelper.StartWithRetry(() =>
+                { attempts++; throw new System.ComponentModel.Win32Exception(5); }, TimeSpan.Zero));
+            Assert.AreEqual(5, denied.NativeErrorCode);
+            Assert.AreEqual(1, attempts);
+        }
+        finally { DeleteRoot(root); }
+    }
+
+    [TestMethod]
     [DataRow("success")]
+    [DataRow("success-with-unknown-file")]
     [DataRow("crash")]
     [DataRow("timeout")]
     [DataRow("tamper")]
@@ -77,6 +124,7 @@ public class AtomicLauncherUpdateTest
                 if (scenario != "cancel")
                 {
                     await update.CommitAsync("beta-26.0.1", startupTimeoutSeconds: 5, startupGraceSeconds: 1);
+                    if (scenario == "success-with-unknown-file") await File.WriteAllTextAsync(Path.Combine(stage, "keep.txt"), "unrelated file");
                     Assert.AreEqual(Hash(oldFixture), Hash(target), "The still-running parent must not be replaced.");
                     if (scenario == "tamper") await File.AppendAllTextAsync(update.CandidatePath, "tamper after handoff");
                 }
@@ -90,9 +138,14 @@ public class AtomicLauncherUpdateTest
             }
             parent.Kill(); // Only this test's disposable parent; production waits for graceful exit.
             await parent.WaitForExitAsync();
-            if (scenario == "success")
+            if (scenario.StartsWith("success", StringComparison.Ordinal))
             {
-                await WaitFor(() => !Directory.Exists(stage), "Successful update cleanup", 25);
+                if (scenario == "success-with-unknown-file")
+                {
+                    await WaitFor(() => Directory.Exists(stage) && Directory.GetFiles(stage).Length == 1 && File.Exists(Path.Combine(stage, "keep.txt")), "Known-file-only cleanup", 25);
+                    Assert.AreEqual("unrelated file", File.ReadAllText(Path.Combine(stage, "keep.txt")));
+                }
+                else await WaitFor(() => !Directory.Exists(stage), "Successful update cleanup", 25);
                 Assert.IsTrue(File.Exists(Path.Combine(root, "started-new")));
                 Assert.AreEqual(Hash(newFixture), Hash(target));
                 Assert.AreEqual("beta-26.0.1", AtomicLauncherUpdate.ReadInstalledReleaseTag(target));
@@ -102,6 +155,10 @@ public class AtomicLauncherUpdateTest
                 await WaitFor(() => File.Exists(Path.Combine(root, "started-old")), "Rollback restart", 30);
                 Assert.AreEqual(Hash(oldFixture), Hash(target));
                 Assert.IsTrue(File.Exists(Path.Combine(stage, "result.json")));
+                using var result = JsonDocument.Parse(File.ReadAllText(Path.Combine(stage, "result.json")));
+                Assert.IsFalse(result.RootElement.GetProperty("Success").GetBoolean());
+                Assert.AreEqual(scenario is "crash" or "timeout", result.RootElement.GetProperty("RolledBack").GetBoolean());
+                Assert.IsFalse(string.IsNullOrWhiteSpace(result.RootElement.GetProperty("Phase").GetString()));
                 Assert.IsNull(AtomicLauncherUpdate.ReadInstalledReleaseTag(target));
             }
             Assert.AreEqual("user configuration must survive", File.ReadAllText(Path.Combine(root, "settings.ini")));

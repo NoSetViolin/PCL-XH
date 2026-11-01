@@ -24,6 +24,8 @@ public sealed class AtomicLauncherUpdate : IDisposable
     public const string RequestEnvironment = "PCL_XH_UPDATE_READY_REQUEST";
     public const string TokenEnvironment = "PCL_XH_UPDATE_READY_TOKEN";
     public const string FailureEnvironment = "PCL_XH_UPDATE_FAILURE";
+    internal const string ManifestEnvironment = "PCL_XH_UPDATE_MANIFEST";
+    internal const string HelperArgument = "--pcl-apply-update";
     public static string? StartupFailureReport { get; private set; }
     private readonly Process _parent;
     private Process? _helper;
@@ -63,14 +65,14 @@ public sealed class AtomicLauncherUpdate : IDisposable
             _oldHash, await HashFileAsync(CandidatePath, cancellationToken).ConfigureAwait(false), releaseTag, token,
             startupTimeoutSeconds, startupGraceSeconds);
         await File.WriteAllTextAsync(RequestPath, JsonSerializer.Serialize(request), cancellationToken).ConfigureAwait(false);
-        using var source = typeof(AtomicLauncherUpdate).Assembly.GetManifestResourceStream("PCL.Core.Updates.ApplyLauncherUpdate.ps1")
-            ?? throw new InvalidOperationException("Updater helper resource is missing.");
-        using var reader = new StreamReader(source);
-        var script = string.Join("\n", (await reader.ReadToEndAsync(cancellationToken)).Split('\n').Select(l => l.TrimStart()));
-        var shell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-        var start = new ProcessStartInfo(shell) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
-        foreach (var arg in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script)) }) start.ArgumentList.Add(arg);
-        start.Environment["PCL_XH_UPDATE_MANIFEST"] = RequestPath;
+        // A copy runs in helper mode before application/config initialization.
+        // Avoid a dynamically encoded PowerShell child for a normal app update.
+        var helperPath = Path.Combine(DirectoryPath, "updater.exe");
+        File.Copy(TargetPath, helperPath);
+        var start = new ProcessStartInfo(helperPath) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden,
+            WorkingDirectory = Path.GetDirectoryName(TargetPath)! };
+        start.ArgumentList.Add(HelperArgument);
+        start.Environment[ManifestEnvironment] = RequestPath;
         _helper = Process.Start(start) ?? throw new IOException("Could not start the updater helper.");
         var until = DateTime.UtcNow.AddSeconds(20);
         var ready = Path.Combine(DirectoryPath, "helper.ready");
@@ -89,6 +91,14 @@ public sealed class AtomicLauncherUpdate : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
         File.Move(commit + ".tmp", commit);
         _committed = true;
+    }
+
+    /// <summary>Called before normal startup; null means this is not an updater process.</summary>
+    public static int? RunHelperIfRequested()
+    {
+        var args = Environment.GetCommandLineArgs();
+        if (args.Length != 2 || args[1] != HelperArgument) return null;
+        return LauncherUpdateHelper.Run(Environment.GetEnvironmentVariable(ManifestEnvironment));
     }
 
     public static LauncherUpdateStartup ConsumeStartupContext()
@@ -115,6 +125,7 @@ public sealed class AtomicLauncherUpdate : IDisposable
         var ready = Path.Combine(directory, "app.ready");
         File.WriteAllText(ready + ".tmp", request.Token);
         File.Move(ready + ".tmp", ready, true);
+        LauncherUpdateHelper.CleanupAfterSuccess(directory, request, executable);
     }
 
     public static string ReceiptPath(string executable) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(executable))!, "." + Path.GetFileName(executable) + ".update-version.json");
@@ -130,12 +141,12 @@ public sealed class AtomicLauncherUpdate : IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { return null; }
     }
 
-    private static bool IsStageDirectory(string directory, string executable) =>
+    internal static bool IsStageDirectory(string directory, string executable) =>
         Path.GetFileName(directory).StartsWith(".pcl-update-", StringComparison.Ordinal) &&
         Guid.TryParseExact(Path.GetFileName(directory)[12..], "N", out _) &&
         string.Equals(Path.GetDirectoryName(directory), Path.GetDirectoryName(Path.GetFullPath(executable)), StringComparison.OrdinalIgnoreCase);
 
-    private static string HashFile(string path)
+    internal static string HashFile(string path)
     {
         using var input = File.OpenRead(path);
         return Convert.ToHexString(SHA256.HashData(input));
@@ -157,7 +168,7 @@ public sealed class AtomicLauncherUpdate : IDisposable
             _helper.Dispose();
         }
         if (!IsStageDirectory(DirectoryPath, TargetPath)) return;
-        foreach (var name in new[] { "new.exe", "request.json", "helper.ready", "helper.ready.tmp", "commit.ready", "commit.ready.tmp", "app.ready", "app.ready.tmp", "result.json", "result.json.tmp", "update.log", "update.log.tmp" })
+        foreach (var name in LauncherUpdateHelper.DisposableFiles)
         {
             var path = Path.Combine(DirectoryPath, name);
             if (File.Exists(path)) File.Delete(path);

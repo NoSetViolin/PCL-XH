@@ -14,6 +14,7 @@ internal static class FluentQa
         ?? Path.Combine(Path.GetTempPath(), "pcl-ui-efficiency-integration");
     [ModuleInitializer] public static void Initialize()
     {
+        if (Environment.GetCommandLineArgs().Contains("--pcl-apply-update")) return;
         foreach(var pair in new[] { ("PCL_PATH", "instance"), ("PCL_PATH_SHARED", "shared"), ("PCL_PATH_LOCAL", "local"), ("PCL_PATH_TEMP", "temp") })
             Environment.SetEnvironmentVariable(pair.Item1, Path.Combine(Root, pair.Item2));
         // Paths only reads these environment overrides in DEBUG. Set the public

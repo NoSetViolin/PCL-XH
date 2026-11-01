@@ -17,6 +17,19 @@ internal static class Program
     [STAThread]
     public static void Main()
     {
+        if (AtomicLauncherUpdate.RunHelperIfRequested() is { } helperExitCode)
+        {
+            Environment.ExitCode = helperExitCode;
+            return;
+        }
+        StartLauncher();
+    }
+
+    // Keep normal startup out of the helper's JIT path as well: helper mode must
+    // not initialize UI services or per-user configuration through static fields.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void StartLauncher()
+    {
         var updateStartup = AtomicLauncherUpdate.ConsumeStartupContext();
         Lifecycle.When(LifecycleState.Running, () =>
         {

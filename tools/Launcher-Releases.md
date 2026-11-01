@@ -74,6 +74,15 @@ Build 号仍由项目的版本元数据维护，不必为了 PublicBeta/Release 
 `PCL_SELFUPDATE_FIXTURE_OLD` / `PCL_SELFUPDATE_FIXTURE_NEW` 为相应 EXE 的绝对路径。
 所有替换、删除与进程测试都在独立的 `pcl-self-update-tests` 临时目录中进行。
 
+更新通过启动器副本的专用辅助进程执行，在加载界面和用户配置前分流，
+不启动 PowerShell 或执行动态脚本。新版确认启动且辅助进程退出后，仅清理
+更新器已知的文件；失败诊断目录保留。更新器启动新版或回滚后重启旧版时，对 Windows 临时拒绝访问、共享冲突和
+映像占用错误限时重试 30 秒；其他错误立即失败。失败目录的 `update.log`
+记录阶段、尝试次数及 Windows 原生错误码，`result.json` 记录实际回滚结果
+和恢复阶段错误。`RestartRetriesTransientWindowsImageLocksAndPreservesNativeErrors`
+使用真实可写文件句柄阻止 EXE 启动，再释放句柄验证重试；另检查错误码 5、
+不可重试错误及限时退出。此测试不修改安全软件策略或真实启动器配置。
+
 `auto-launcher-update-only.flag` 用于真正的发布版启动器端到端测试，需将带诊断注入的
 两个单文件版本放在隔离目录，设置 `PCL_FRAME_QA_ROOT` 与 `PCL_AUTOUPDATE_NEW_EXE`。
 旧版会通过正式页面的自动更新流程下载测试附件并退出，新版确认启动、验证原路径、
